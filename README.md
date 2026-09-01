@@ -1,58 +1,53 @@
-### Apktool
-_This is the repository for Apktool. The website is at the [apktool.org](https://github.com/iBotPeaches/apktool.org) repository._
+# Apktool Studio
 
-[![CI](https://github.com/iBotPeaches/Apktool/actions/workflows/build.yml/badge.svg)](https://github.com/iBotPeaches/Apktool/actions/workflows/test.yml)
-[![Software License](https://img.shields.io/badge/license-Apache%202.0-brightgreen.svg)](https://github.com/iBotPeaches/Apktool/blob/master/LICENSE.md)
+基于 Apktool 3.0.3 的本地 APK 解码与回编工作台。项目提供原始 Apktool CLI，并增加了一个只监听本机回环地址的 Web 界面，方便上传 APK、查看解码项目文件与回编结果。
 
-Apktool is a tool for reverse engineering third-party, closed, binary, Android apps. It can decode resources to nearly original form and rebuild them after making some modifications; it makes it possible to debug smali code step-by-step. It also makes working with apps easier thanks to project-like file structure and automation of some repetitive tasks such as building apk, etc.
+> 仅应处理你拥有、获授权或法律允许分析的 APK。请勿将第三方 APK、解码结果或签名材料提交到仓库。
 
-Apktool is **NOT** intended for piracy and other non-legal uses. It could be used for localizing and adding features, adding support for custom platforms, and other GOOD purposes. Just try to be fair with the authors of an app, that you use and probably like.
+## 功能
 
-### Branches
-- `main` - Apktool 3.x branch
-- `2.x` - Maintenance branch for Apktool 2.x releases
+- 使用 Apktool CLI 解码和回编 APK。
+- 本地 Web 工作台：上传、任务日志、项目文件浏览与构建输出目录设置。
+- 可切换内置配色，也可在设置页保存自定义配色。
+- 使用 WebGL 液态玻璃效果；不支持 WebGL 的浏览器自动降级为普通玻璃样式。
+- 工作文件保存至 `web-work/`，默认已由 Git 忽略。
 
-#### Support
-- [Project Page](https://apktool.org)
-- [#apktool on libera.chat](https://web.libera.chat)
+## 环境要求
 
-#### Security Vulnerabilities
+- Windows 10 或更新版本
+- Java 8 或更新版本（推荐使用较新的 LTS JDK）
+- Python 3（用于提供本地 Web 静态文件）
 
-If you discover a security vulnerability within Apktool, please send an e-mail to Connor Tumbleson at connor.tumbleson(at)gmail.com. All security vulnerabilities will be promptly addressed.
+## 快速开始
 
-#### Links
-- [Downloads](https://bitbucket.org/iBotPeaches/apktool/downloads)
-- [Downloads Mirror](https://connortumbleson.com/apktool)
-- [How to Build](https://apktool.org/docs/build)
-- [Documentation](https://apktool.org/wiki/the-basics/intro)
-- [Bug Reports](https://github.com/iBotPeaches/Apktool/issues)
-- [Changelog/Information](https://apktool.org/blog)
-- [XDA Post](https://forum.xda-developers.com/t/util-dec-2-2020-apktool-tool-for-reverse-engineering-apk-files.1755243/)
-- [Source (GitHub)](https://github.com/iBotPeaches/Apktool)
-- [Source (Bitbucket)](https://bitbucket.org/iBotPeaches/apktool/)
+双击根目录的 `start-apktool-studio.bat`。脚本会启动：
 
+- Web 界面：<http://127.0.0.1:5173/>
+- Java API：<http://127.0.0.1:8787/api/health>
 
-## Sponsors
+首次启动会由 Gradle 编译相关模块，耗时会略长。看到 `Apktool Web API listening` 后即可在浏览器中使用。
 
-Special thanks goes to the following sponsors:
+## 命令行使用
 
-### Sourcetoad
-[Sourcetoad](https://sourcetoad.com/) is an award-winning software and app development firm committed to the co-creation of technology solutions that solve complex business problems, delight users, and help our clients achieve their goals.
+构建 CLI：
 
-<a href="https://www.sourcetoad.com" alt="Sourcetoad">
-    <picture>
-        <img src="https://github.com/ibotpeaches/apktool/raw/main/.github/assets/sponsors/sourcetoad-horizontal.svg">
-    </picture>
-</a>
+```bat
+gradlew.bat :brut.apktool:apktool-cli:build
+```
 
-### Emerge Tools
+解码 APK：
 
-[Emerge Tools](https://www.emergetools.com) is a suite of revolutionary products designed to supercharge mobile apps and the teams that build them.
+```bat
+scripts\windows\apktool.bat d your-app.apk
+```
 
-<a href="https://www.emergetools.com" alt="Emerge Tools">
-    <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://github.com/ibotpeaches/apktool/raw/main/.github/assets/sponsors/emerge-tools-vertical-white.svg">
-        <source media="(prefers-color-scheme: light)" srcset="https://github.com/ibotpeaches/apktool/raw/main/.github/assets/sponsors/emerge-tools-vertical-black.svg">
-        <img src="https://github.com/ibotpeaches/apktool/raw/main/.github/assets/sponsors/emerge-tools-vertical-black.svg">
-    </picture>
-</a>
+## 项目结构
+
+- `brut.apktool/`：Apktool CLI 与核心库。
+- `apktool-web/`：本地 Java API。
+- `web/`：静态 Web 界面和本地液态玻璃资源。
+- `web-work/`：上传、解码与回编工作目录（不提交）。
+
+## 开源许可
+
+本项目沿用 [Apache License 2.0](LICENSE.md)。`web/prism-glass/liquidGL.js` 采用 MIT 许可，许可证位于同目录的 `liquidGL-LICENSE.txt`。
