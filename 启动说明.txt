@@ -1,0 +1,8 @@
+Apktool Studio 一键启动
+
+双击 start-apktool-studio.bat，即可启动 Java 后端和 Web 前端。
+
+Web 前端：http://127.0.0.1:5173/
+Java API：http://127.0.0.1:8787/api/health
+
+批处理脚本使用 ASCII 命令，避免 Windows cmd 的代码页影响启动。

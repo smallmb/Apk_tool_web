@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apktool Studio</title>
+  <link rel="stylesheet" href="./prism-glass/dark-glass-tokens.css" />
+  <link rel="stylesheet" href="./prism-glass/component-recipes.css" />
+  <!-- 中文注释：使用 MIT 许可的 Tabler Icons Webfont，保持侧边栏图标风格统一。 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    /* 中文注释：页面基础样式，复用 Prism Glass 的语义化颜色变量。 */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
+    /* 中文注释：全站统一使用 Inter 与 Noto Sans SC，避免日志和技术信息出现字体跳变。 */
+    :root { --font-body:'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+    * { box-sizing:border-box; }
+    html, body { width:100%; min-height:100%; }
+    body { margin:0; color:var(--text-primary); font-family:var(--font-body); background:radial-gradient(circle at 75% 8%, rgba(var(--ambient-primary-rgb),.26), transparent 32rem), linear-gradient(135deg,var(--canvas-base),var(--canvas-secondary)); }
+    button, input { font:inherit; }
+    button { cursor:pointer; transition:transform .18s ease, border-color .18s ease, background .18s ease, opacity .18s ease; }
+    button:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid var(--accent-primary); outline-offset:3px; }
+    .app { display:grid; grid-template-columns:240px minmax(0,1fr) 320px; min-height:100vh; gap:18px; padding:18px; }
+    .glass { background:linear-gradient(145deg,rgba(var(--surface-base-rgb),.82),rgba(var(--surface-strong-rgb),.7)); border:1px solid var(--border-default); box-shadow:var(--shadow-panel); backdrop-filter:blur(var(--blur)); }
+    .sidebar, .inspector { border-radius:var(--radius-panel); padding:22px; }
+    .sidebar { position:sticky; top:18px; height:calc(100vh - 36px); }
+    .brand { display:flex; gap:11px; align-items:center; margin-bottom:42px; }
+    .brand-mark { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; color:#03120e; font-weight:800; background:linear-gradient(135deg,var(--accent-primary),var(--highlight)); box-shadow:0 0 28px rgba(var(--accent-primary-rgb),.32); }
+    .brand strong { font-size:15px; letter-spacing:-.02em; }
+    .brand small { display:block; color:var(--text-tertiary); font-size:10px; letter-spacing:.12em; text-transform:uppercase; margin-top:2px; }
+    .nav-label, .eyebrow { color:var(--text-tertiary); font-size:10px; letter-spacing:.16em; text-transform:uppercase; }
+    .nav { display:grid; gap:8px; margin-top:12px; }
+    .nav button { display:flex; align-items:center; gap:10px; width:100%; color:var(--text-secondary); background:transparent; border:0; border-radius:12px; padding:11px 12px; text-align:left; }
+    .nav button.active, .nav button:hover { color:var(--text-primary); background:rgba(var(--accent-primary-rgb),.11); transform:translateX(3px); }
+    .nav i { width:18px; color:var(--accent-primary); font-size:18px; line-height:1; }
+    .sidebar-footer { position:absolute; bottom:32px; color:var(--text-tertiary); font-size:11px; line-height:1.6; }
+    .main { min-width:0; padding:30px 22px 42px; }
+    .topbar { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; margin-bottom:30px; }
+    .topbar > div:first-child { max-width:700px; }
+    h1 { font-size:clamp(28px,3vw,44px); line-height:1; letter-spacing:-.065em; margin:9px 0 12px; }
+    .lede { color:var(--text-secondary); max-width:570px; margin:0; line-height:1.65; }
+    .status { display:flex; gap:9px; align-items:center; color:var(--text-secondary); border:1px solid var(--border-subtle); border-radius:999px; padding:8px 12px; font-size:12px; white-space:nowrap; }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--accent-primary); box-shadow:0 0 12px var(--accent-primary); }
+    .status.waiting { color:#f4c978; border-color:rgba(244,201,120,.28); }
+    .status.waiting .dot { background:#f4c978; box-shadow:0 0 12px rgba(244,201,120,.75); animation:pulse 1.5s ease-in-out infinite; }
+    .status.offline { color:#ff9c9c; border-color:rgba(255,156,156,.3); }
+    .status.offline .dot { background:#ff7777; box-shadow:0 0 12px rgba(255,119,119,.7); }
+    @keyframes pulse { 50% { opacity:.35; transform:scale(.72); } }
+    .hero-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr); gap:16px; }
+    .card { border-radius:var(--radius-card); padding:24px; }
+    .dropzone { min-height:286px; display:grid; place-items:center; text-align:center; border:1px dashed rgba(var(--accent-primary-rgb),.45); background:radial-gradient(circle at 50% 20%,rgba(var(--accent-primary-rgb),.12),transparent 55%),rgba(var(--surface-soft-rgb),.4); }
+    .dropzone:hover { border-color:var(--accent-primary); }
+    .dropzone.dragover { border-color:var(--accent-primary); background:radial-gradient(circle at 50% 20%,rgba(var(--accent-primary-rgb),.24),transparent 55%),rgba(var(--surface-soft-rgb),.55); box-shadow:0 0 0 3px rgba(var(--accent-primary-rgb),.12),var(--shadow-card); }
+    .drop-icon { width:58px; height:58px; display:grid; place-items:center; border:1px solid var(--border-strong); border-radius:18px; color:var(--accent-primary); font-size:25px; margin:auto auto 16px; }
+    .dropzone h2 { font-size:20px; margin:0 0 8px; letter-spacing:-.04em; }
+    .dropzone p { color:var(--text-tertiary); font-size:12px; margin:0 0 18px; }
+    .primary { color:#03120e; border:0; background:var(--accent-primary); border-radius:var(--radius-control); padding:11px 17px; font-weight:800; }
+    .primary:hover { filter:brightness(1.12); transform:translateY(-1px); }
+    .primary:disabled, .secondary:disabled { cursor:not-allowed; opacity:.55; transform:none; }
+    .secondary { color:var(--text-primary); background:rgba(255,255,255,.05); border:1px solid var(--border-default); border-radius:var(--radius-control); padding:10px 14px; }
+    .metric { display:grid; gap:10px; align-content:start; }
+    .metric .big { font-size:42px; font-weight:800; letter-spacing:-.08em; color:var(--accent-primary); }
+    .metric p { color:var(--text-secondary); font-size:13px; line-height:1.55; margin:0; }
+    .section-head { display:flex; justify-content:space-between; align-items:center; margin:28px 2px 12px; }
+    .section-head h3 { font-size:15px; margin:0; letter-spacing:-.02em; }
+    .section-head a { color:var(--accent-secondary); font-size:11px; }
+    .task { display:grid; grid-template-columns:36px minmax(0,1fr) auto; gap:13px; align-items:center; padding:15px 16px; margin-bottom:9px; border-radius:18px; }
+    .task-icon { width:34px; height:34px; display:grid; place-items:center; border-radius:11px; color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.1); font-size:11px; font-weight:800; letter-spacing:-.04em; }
+    .task strong { display:block; font-size:13px; }
+    .task small { color:var(--text-tertiary); font-size:11px; }
+    .tag { color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.11); border-radius:999px; padding:5px 8px; font-size:10px; }
+    .inspector { position:sticky; top:18px; align-self:start; max-height:calc(100vh - 36px); overflow:hidden; }
+    .inspector h3 { font-size:15px; margin:7px 0 22px; }
+    .log { display:grid; gap:12px; max-height:calc(100vh - 210px); overflow-y:auto; padding-right:8px; font-size:11px; color:var(--text-secondary); scrollbar-color:var(--accent-primary) transparent; scrollbar-width:thin; }
+    .log::-webkit-scrollbar { width:6px; }
+    .log::-webkit-scrollbar-track { background:transparent; }
+    .log::-webkit-scrollbar-thumb { background:rgba(var(--accent-primary-rgb),.55); border-radius:999px; }
+    .log-line { display:grid; grid-template-columns:48px 1fr; gap:9px; line-height:1.55; }
+    .log-time { color:var(--text-tertiary); }
+    .log-line b { color:var(--accent-primary); font-weight:500; }
+    .divider { height:1px; background:var(--border-subtle); margin:22px 0; }
+    .info-row { display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-subtle); font-size:12px; }
+    .info-row span:first-child { color:var(--text-tertiary); }
+    .info-row span:last-child { color:var(--text-secondary); font-size:11px; text-align:right; overflow-wrap:anywhere; }
+    .toast { position:fixed; right:28px; bottom:28px; z-index:10; max-width:min(380px,calc(100vw - 32px)); padding:12px 15px; border:1px solid var(--border-strong); border-radius:12px; color:var(--text-primary); background:rgba(7,28,23,.94); box-shadow:var(--shadow-panel); opacity:0; transform:translateY(12px); pointer-events:none; transition:opacity .2s ease, transform .2s ease; font-size:12px; line-height:1.5; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast.error { border-color:rgba(255,130,130,.55); }
+    .backend-wait { display:flex; align-items:center; gap:14px; margin-top:24px; padding:16px; border:1px solid rgba(244,201,120,.25); border-radius:14px; color:#f4c978; background:rgba(244,201,120,.06); }
+    .backend-wait strong { display:block; font-size:13px; }
+    .backend-wait p { margin:4px 0 0; color:var(--text-secondary); font-size:12px; }
+    .backend-wait b { color:#f4c978; }
+    .wait-spinner { width:18px; height:18px; flex:0 0 18px; border:2px solid rgba(244,201,120,.25); border-top-color:#f4c978; border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .file-breadcrumb { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-bottom:20px; color:var(--text-tertiary); font-size:11px; }
+    .breadcrumb { padding:5px 0; border:0; color:var(--accent-secondary); background:transparent; font-size:11px; }
+    .breadcrumb:hover { color:var(--text-primary); }
+    .breadcrumb-current { color:var(--text-primary); cursor:default; }
+    .file-breadcrumb > .breadcrumb-current { padding:6px 10px; border:1px solid var(--border-default); border-radius:8px; background:rgba(255,255,255,.05); }
+    .file-root-title { display:flex; justify-content:space-between; gap:12px; align-items:baseline; margin-bottom:10px; color:var(--text-primary); font-size:13px; font-weight:700; }
+    .file-root-title small, .file-folder small { display:block; margin-top:4px; color:var(--text-tertiary); font-size:11px; font-weight:400; }
+    .file-folder, .file-row { display:flex; align-items:center; width:100%; min-height:52px; gap:12px; padding:10px 2px; border:0; border-bottom:1px solid var(--border-subtle); color:var(--text-secondary); background:transparent; text-align:left; }
+    .file-folder { cursor:pointer; }
+    .file-folder:hover { padding-left:8px; color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.06); }
+    .file-folder > i:first-child { color:var(--accent-primary); font-size:18px; }
+    .file-folder span { min-width:0; flex:1; }
+    .file-folder strong { display:block; overflow:hidden; color:inherit; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
+    .folder-arrow { color:var(--text-tertiary)!important; font-size:15px!important; }
+    .file-row > span { display:flex; align-items:center; gap:10px; min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+    .file-row > span i { color:var(--text-tertiary); }
+    .file-row small { color:var(--text-tertiary); font-size:11px; }
+    .file-empty, .file-loading { margin:24px 0 6px; color:var(--text-tertiary); font-size:12px; }
+    .file-loading { display:flex; align-items:center; gap:10px; color:var(--text-secondary); }
+    .error-text { color:#ff9c9c; }
+    .theme-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px; }
+    .theme-choice { display:flex; align-items:center; gap:10px; min-height:58px; padding:10px; color:var(--text-secondary); background:rgba(255,255,255,.035); border:1px solid var(--border-default); border-radius:12px; text-align:left; }
+    .theme-choice:hover, .theme-choice.active { color:var(--text-primary); border-color:rgba(var(--accent-primary-rgb),.62); background:rgba(var(--accent-primary-rgb),.09); }
+    .theme-swatch { display:flex; flex:0 0 auto; overflow:hidden; width:34px; height:34px; border:1px solid rgba(255,255,255,.16); border-radius:10px; }
+    .theme-swatch i { display:block; flex:1; }
+    .theme-choice strong { display:block; font-size:12px; }
+    .theme-choice small { display:block; margin-top:3px; color:var(--text-tertiary); font-size:10px; }
+    .custom-colors { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-top:12px; }
+    .color-field { display:grid; gap:5px; color:var(--text-tertiary); font-size:10px; }
+    .color-field input { width:100%; height:34px; padding:2px; background:transparent; border:1px solid var(--border-default); border-radius:8px; cursor:pointer; }
+    /* 中文注释：liquidGL 在面板后方绘制共享的 WebGL 折射层，内容单独置顶以保留交互能力。 */
+    .liquid-gl-target { position:relative; z-index:3; }
+    .liquid-gl-content { position:relative; z-index:3; pointer-events:auto; }
+    /* 中文注释：中间卡片不额外包裹节点，直接把每个一级子项提升到玻璃层上方。 */
+    .liquid-gl-target > * { position:relative; z-index:3; pointer-events:auto; }
+    /* 中文注释：侧栏底部状态使用绝对定位，包装层必须撑满侧栏以维持原有定位基准。 */
+    .sidebar .liquid-gl-content { height:100%; }
+    input[type=file] { display:none; }
+    @media (max-width:1050px) { .app { grid-template-columns:200px minmax(0,1fr); } .inspector { display:none; } }
+    @media (max-width:700px) { .app { display:block; padding:10px; } .sidebar { position:static; height:auto; margin-bottom:10px; } .sidebar-footer { position:static; margin-top:28px; } .nav { grid-template-columns:repeat(4,1fr); } .nav button { justify-content:center; text-align:center; font-size:11px; padding:9px 4px; } .nav button span { display:block; margin:0 0 4px; } .hero-grid { grid-template-columns:1fr; } .main { padding:22px 8px 30px; } .topbar { display:block; } .status { width:max-content; margin-top:18px; } .log { max-height:180px; } .dropzone { min-height:250px; } .dropzone .secondary { margin:10px 0 0!important; } .toast { right:16px; bottom:16px; } }
+    @media (prefers-reduced-motion:reduce) { *,*:before,*:after { transition:none!important; animation:none!important; transform:none!important; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar glass liquid-gl-target"><div class="liquid-gl-content">
+      <div class="brand"><div class="brand-mark">A</div><div><strong>Apktool Studio</strong><small>reverse engineering desk</small></div></div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav" aria-label="主导航">
+        <button class="active" data-page="workspace"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>工作台</button><button data-page="files"><i class="ti ti-folder-code" aria-hidden="true"></i>项目文件</button><button data-page="framework"><i class="ti ti-box" aria-hidden="true"></i>Framework</button><button data-page="settings"><i class="ti ti-adjustments" aria-hidden="true"></i>设置</button>
+      </nav>
+      <div class="sidebar-footer">Apktool 3.0.3<br><span style="color:var(--accent-secondary)">● 本地引擎已连接</span></div>
+    </div></aside>
+    <main class="main">
+      <header id="page-header" class="topbar"><div><div class="eyebrow">APK WORKBENCH / 01</div><h1>把 APK 拆开，<br><span style="color:var(--accent-primary)">看见它的结构。</span></h1><p class="lede">从一个 APK 开始，在本机完成解码、浏览与构建。文件不离开你的电脑。</p></div><div id="backend-status" class="status waiting"><i class="dot"></i><span>正在等待后端启动 · 已等待 0 秒</span></div></header>
+      <section class="hero-grid">
+        <label class="dropzone glass card liquid-gl-target" for="apk-file"><div><div class="drop-icon">↑</div><h2>拖入 APK 开始分析</h2><p>支持 .apk、.apk.1、.apk.2 · 文件只在本机处理</p><button class="primary" type="button" onclick="document.getElementById('apk-file').click()">选择 APK 文件</button><button id="build-button" class="secondary" type="button" style="display:none;margin-left:8px" onclick="buildCurrentTask(event)">构建 APK</button><input id="apk-file" type="file" accept=".apk,.apk.*,.apk.1,.apk.2,application/vnd.android.package-archive" /></div></label>
+        <article class="metric glass card liquid-gl-target"><div class="eyebrow">CURRENT ENGINE</div><div class="big">3.0.3</div><p>Smali 3.0.9-dev<br>Baksmali 3.0.9-dev</p><div class="divider"></div><div class="info-row"><span>运行平台</span><span>Windows x64</span></div><div class="info-row"><span>处理模式</span><span>本地隔离</span></div></article>
+      </section>
+      <div class="section-head"><h3>最近的任务</h3><a href="#" onclick="return false">查看全部 →</a></div>
+      <section id="task-list"><div class="task glass liquid-gl-target"><div class="task-icon">APK</div><div><strong>未选择项目</strong><small>上传一个 APK 后，任务会显示在这里</small></div><span class="tag">待开始</span></div><div class="task glass liquid-gl-target"><div class="task-icon">FW</div><div><strong>Framework 资源</strong><small>系统框架资源将从本机缓存读取</small></div><span class="tag">就绪</span></div></section>
+      <section id="page-panel" class="glass card" style="display:none;margin-top:28px"></section>
+    </main>
+    <aside class="inspector glass liquid-gl-target"><div class="liquid-gl-content"><div class="eyebrow">LIVE OUTPUT</div><h3>运行日志</h3><div class="log"><div class="log-line"><span class="log-time">15:50:21</span><span><b>READY</b> Apktool CLI 已准备就绪</span></div><div class="log-line"><span class="log-time">15:50:22</span><span><b>INFO</b> 等待输入 APK 文件</span></div><div class="log-line"><span class="log-time">—</span><span style="color:var(--text-tertiary)">上传后显示解码进度、资源解析和构建输出</span></div></div><div class="divider"></div><div class="eyebrow">SAFE BY DEFAULT</div><p style="color:var(--text-secondary);font-size:12px;line-height:1.65">文件处理限定在本机工作目录。每个任务使用独立临时目录，并通过 Java API 调用本地 Apktool CLI。</p><button id="health-button" class="secondary" style="width:100%;margin-top:10px" onclick="checkCliStatus()">检查 CLI 状态</button></div></aside>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./prism-glass/palette-engine.js"></script>
+  <script type="module" src="./prism-glass/liquidGL.js"></script>
+  <script>
+    // 中文注释：初始化 Prism Glass 调色引擎，让界面使用统一的语义色彩。
+    // 中文注释：四种内置主题覆盖冷静、警示、夜间分析等不同工作氛围。
+    const palettes = [
+      { id:'APKTOOL', name:'APKTool Emerald', colors:['#245E50','#248B70','#25DDA8','#8EDDC5','#E8FFF7'], effect:{type:'none'} },
+      { id:'COBALT', name:'Cobalt Trace', colors:['#28517A','#2878C8','#63B5FF','#A9D8FF','#EBF7FF'], effect:{type:'none'} },
+      { id:'AMBER', name:'Amber Console', colors:['#755126','#B97520','#FFC45A','#FFE0A0','#FFF6D9'], effect:{type:'none'} },
+      { id:'ORCHID', name:'Orchid Byte', colors:['#603568','#A344B7','#EA8CFF','#F4B7FF','#FFF0FF'], effect:{type:'none'} }
+    ];
+    let paletteEngine = null;
+    let currentTaskId = null;
+    let backendReady = false;
+    let backendWaitStartedAt = Date.now();
+    let backendWaitTimer = null;
+    let backendPollTimer = null;
+    if (window.DarkGlassPaletteEngine) {
+      paletteEngine = DarkGlassPaletteEngine.create(palettes);
+      restorePalette();
+    }
+    // 中文注释：启动后持续探测本地 API，在后端启动期间显示已等待秒数。
+    function updateBackendStatus(state, seconds) {
+      const status = document.getElementById('backend-status');
+      if (!status) return;
+      status.className = `status ${state}`;
+      const text = state === 'online' ? '本地 CLI 在线' : state === 'offline' ? '后端未连接' : `正在等待后端启动 · 已等待 ${seconds} 秒`;
+      status.innerHTML = `<i class="dot"></i><span>${text}</span>`;
+    }
+    async function pollBackendHealth() {
+      try {
+        const response = await fetch('http://127.0.0.1:8787/api/health', { cache:'no-store' });
+        if (!response.ok) throw new Error('health check failed');
+        backendReady = true;
+        clearInterval(backendPollTimer);
+        clearInterval(backendWaitTimer);
+        updateBackendStatus('online', 0);
+      } catch (error) {
+        const seconds = Math.floor((Date.now() - backendWaitStartedAt) / 1000);
+        updateBackendStatus('waiting', seconds);
+      }
+    }
+    function startBackendHealthCheck() {
+      backendWaitStartedAt = Date.now();
+      updateBackendStatus('waiting', 0);
+      backendWaitTimer = setInterval(() => {
+        if (!backendReady) updateBackendStatus('waiting', Math.floor((Date.now() - backendWaitStartedAt) / 1000));
+      }, 1000);
+      pollBackendHealth();
+      backendPollTimer = setInterval(pollBackendHealth, 1500);
+    }
+    startBackendHealthCheck();
+    // 中文注释：选择文件后上传到 Java 后端，并自动启动真实解码任务。
+    const dropzone = document.querySelector('.dropzone');
+    const apkInput = document.getElementById('apk-file');
+    // 中文注释：统一处理文件选择和拖拽释放，确保两种入口调用相同的上传逻辑。
+    async function handleApkFile(file) {
+      if (!file) return;
+      if (!/^.+\.apk(?:\.\d+)?$/i.test(file.name)) { showToast('请选择 .apk 或 .apk.数字 文件', true); return; }
+      const title = document.querySelector('.dropzone h2');
+      const detail = document.querySelector('.dropzone p');
+      title.textContent = file.name;
+      detail.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB · 正在上传到本地后端`;
+      try {
+        // 中文注释：把 .apk.1、.apk.2 等下载后缀在上传时自动改回 .apk。
+        const uploadName = file.name.replace(/\.\d+$/i, '');
+        const upload = await fetch(`http://127.0.0.1:8787/api/upload?name=${encodeURIComponent(uploadName)}`, { method:'POST', body:file });
+        const task = await upload.json();
+        if (!upload.ok) throw new Error(task.error || '上传失败');
+        currentTaskId = task.id;
+        const start = await fetch(`http://127.0.0.1:8787/api/tasks/${task.id}/decode`, { method:'POST' });
+        if (!start.ok) throw new Error((await start.json()).error || '启动解码失败');
+        detail.textContent = '已开始解码 · 右侧日志会实时更新';
+        const buildButton = document.getElementById('build-button');
+        buildButton.style.display = 'inline-block';
+        buildButton.disabled = true;
+        buildButton.textContent = '解码中…';
+        pollTask(task.id);
+      } catch (error) {
+        detail.textContent = `连接后端失败：${error.message} · 请先启动 Java Web 服务`;
+      }
+    }
+    apkInput.addEventListener('change', (event) => handleApkFile(event.target.files[0]));
+    // 中文注释：拖入卡片时阻止浏览器默认打开文件，并显示明确的投放状态。
+    ['dragenter','dragover'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => {
+      event.preventDefault(); event.stopPropagation(); dropzone.classList.add('dragover');
+    }));
+    ['dragleave','drop'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => {
+      event.preventDefault(); event.stopPropagation(); dropzone.classList.remove('dragover');
+    }));
+    dropzone.addEventListener('drop', (event) => handleApkFile(event.dataTransfer.files[0]));
+    // 中文注释：定时读取任务状态和日志，直到解码完成或失败。
+    async function pollTask(id) {
+      const log = document.querySelector('.log');
+      const timer = setInterval(async () => {
+        try {
+          const [statusResponse, logResponse] = await Promise.all([fetch(`http://127.0.0.1:8787/api/tasks/${id}`), fetch(`http://127.0.0.1:8787/api/tasks/${id}/logs`)]);
+          const status = await statusResponse.json(); const data = await logResponse.json();
+          // 中文注释：日志内容来自外部 APK 处理过程，使用转义文本避免破坏页面结构。
+          log.innerHTML = data.logs.map((line, index) => `<div class="log-line"><span class="log-time">${index + 1}</span><span><b>CLI</b> ${escapeHtml(line)}</span></div>`).join('');
+          const buildButton = document.getElementById('build-button');
+          if (status.status === 'completed') { buildButton.disabled = false; buildButton.textContent = '构建 APK'; }
+          if (status.status === 'building') { buildButton.disabled = true; buildButton.textContent = '构建中…'; }
+          if (status.status === 'failed') { buildButton.disabled = true; buildButton.textContent = '解码失败'; }
+          if (!status.running) clearInterval(timer);
+        } catch (error) { clearInterval(timer); }
+      }, 700);
+    }
+    // 中文注释：让侧边栏入口切换到对应的页面视图，并保持当前工作台状态。
+    const pageContent = {
+      files: ['项目文件','浏览解码后的 Manifest、资源和 Smali 文件。','FILE EXPLORER','<div class="info-row"><span>当前项目</span><span>上传 APK 后可浏览</span></div><div class="info-row"><span>目录结构</span><span>AndroidManifest.xml · res · smali</span></div><button class="primary" style="margin-top:18px" onclick="document.querySelector(\"[data-page=workspace]\").click()">返回工作台</button>'],
+      framework: ['Framework','管理 Apktool 用于资源解析的 Android Framework 缓存。','FRAMEWORK CACHE','<div class="info-row"><span>默认目录</span><span>%USERPROFILE%\\AppData\\Local\\apktool\\framework</span></div><div class="info-row"><span>当前状态</span><span>由本地 CLI 管理</span></div><button class="secondary" style="margin-top:18px" onclick="showToast(\'Framework 刷新需要通过本地 CLI 执行\', true)">刷新 Framework</button>'],
+      settings: ['设置','调整工作目录、构建输出和界面配色。','LOCAL CONFIG',`<div class="info-row"><span>构建输出目录</span><span><input id="output-dir" value="web-work" style="width:140px;color:var(--text-primary);background:rgba(255,255,255,.06);border:1px solid var(--border-default);border-radius:8px;padding:6px 8px" aria-label="构建输出目录"></span></div><div class="info-row"><span>工作模式</span><span>本地隔离</span></div><div class="divider"></div><div class="eyebrow">界面配色</div><p class="lede" style="font-size:12px;margin-top:8px">选择内置主题，或用下方五个色槽创建自己的玻璃质感配色。</p><div id="theme-grid" class="theme-grid"></div><div class="custom-colors"><label class="color-field">底色<input id="color-1" type="color" value="#245E50"></label><label class="color-field">主色<input id="color-2" type="color" value="#248B70"></label><label class="color-field">强调<input id="color-3" type="color" value="#25DDA8"></label><label class="color-field">辅助<input id="color-4" type="color" value="#8EDDC5"></label><label class="color-field">高光<input id="color-5" type="color" value="#E8FFF7"></label></div><button class="secondary" style="margin-top:12px" onclick="applyCustomPalette()">应用自定义配色</button><button class="primary" style="margin:18px 0 0 8px" onclick="saveOutputDir()">保存设置</button>`]
+    };
+    document.querySelectorAll('.nav button[data-page]').forEach((button) => button.addEventListener('click', () => {
+      const page = button.dataset.page;
+      document.querySelectorAll('.nav button').forEach((item) => item.classList.toggle('active', item === button));
+      const panel = document.getElementById('page-panel');
+      const header = document.getElementById('page-header');
+      const workspaceItems = document.querySelectorAll('.main > .hero-grid, .main > .section-head, #task-list');
+      if (page === 'workspace') {
+        header.querySelector('.eyebrow').textContent = 'APK WORKBENCH / 01';
+        header.querySelector('h1').innerHTML = '把 APK 拆开，<br><span style="color:var(--accent-primary)">看见它的结构。</span>';
+        header.querySelector('.lede').textContent = '一个为 Apktool 打造的可视化工作台。上传 APK，选择解码策略，然后在同一个空间里检查资源、Smali 和构建日志。';
+        workspaceItems.forEach((item) => item.style.display = ''); panel.style.display = 'none';
+      } else {
+        const data = pageContent[page];
+        header.querySelector('.eyebrow').textContent = `${data[2]} / 02`;
+        header.querySelector('h1').innerHTML = `${data[0]}<br><span style="color:var(--accent-primary)">管理你的工具链。</span>`;
+        header.querySelector('.lede').textContent = data[1];
+        workspaceItems.forEach((item) => item.style.display = 'none'); panel.style.display = 'block'; panel.innerHTML = `<div class="eyebrow">${data[2]}</div><h2 style="margin:10px 0 8px;letter-spacing:-.04em">${data[0]}</h2><p class="lede">${data[1]}</p>${page === 'files' ? '' : data[3]}`;
+        const outputInput = document.getElementById('output-dir');
+        if (outputInput) outputInput.value = localStorage.getItem('apktool-output-dir') || 'web-work';
+        if (page === 'settings') renderThemeSettings();
+        if (page === 'files') loadProjectFiles(panel);
+      }
+    }));
+    // 中文注释：读取后端任务，先把 web-work 下的每个任务显示为一个软件文件夹。
+    async function loadProjectFiles(panel) {
+      try {
+        const taskResponse = await fetch('http://127.0.0.1:8787/api/tasks', { cache:'no-store' });
+        const taskData = await taskResponse.json();
+        panel.innerHTML += '<div class="divider"></div><div id="file-browser"></div>';
+        activeProjectTasks = taskData.tasks || [];
+        renderTaskRoot();
+      } catch (error) {
+        // 中文注释：后端尚未启动时展示等待计时，并自动重试项目文件请求。
+        const seconds = Math.floor((Date.now() - backendWaitStartedAt) / 1000);
+        panel.innerHTML += `<div class="backend-wait"><span class="wait-spinner"></span><div><strong>正在等待后端启动</strong><p>已等待 <b>${seconds}</b> 秒，后端启动后将自动重试。</p></div></div>`;
+        const retryTimer = setInterval(async () => {
+          if (!backendReady) {
+            const counter = panel.querySelector('.backend-wait b');
+            if (counter) counter.textContent = Math.floor((Date.now() - backendWaitStartedAt) / 1000);
+            return;
+          }
+          clearInterval(retryTimer);
+          panel.querySelector('.backend-wait')?.remove();
+          await loadProjectFiles(panel);
+        }, 1000);
+      }
+    }
+    // 中文注释：保存当前任务、文件列表和目录，用于面包屑导航。
+    let activeProjectTasks = [];
+    let activeProjectTask = null;
+    let activeProjectFiles = [];
+    let activeProjectPath = '';
+    // 中文注释：根目录展示 web-work 下的软件任务文件夹，点击后进入任务内容。
+    function renderTaskRoot() {
+      const browser = document.getElementById('file-browser'); if (!browser) return;
+      const folders = activeProjectTasks.map((task, index) => `<button class="file-folder" onclick="openProjectTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-folder"></i><span><strong>项目 ${String(index + 1).padStart(2, '0')}</strong><small>${escapeHtml(task.name || 'input.apk')} · ${escapeHtml(task.status || '待处理')} · 解码项目</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>`).join('');
+      browser.innerHTML = `<div class="file-breadcrumb"><button class="breadcrumb breadcrumb-current">web-work</button></div><div class="file-root-title"><span>软件文件夹</span><small>web-work / ${activeProjectTasks.length} 个项目</small></div>${folders || '<p class="file-empty">暂无已解码项目，请先在工作台上传 APK。</p>'}`;
+    }
+    // 中文注释：进入指定 APK 的解码目录，而不是在根目录展开文件树。
+    async function openProjectTask(taskId) {
+      const task = activeProjectTasks.find((item) => item.id === taskId); if (!task) return;
+      const browser = document.getElementById('file-browser');
+      browser.innerHTML = '<div class="file-loading"><span class="wait-spinner"></span>正在读取软件文件夹…</div>';
+      try {
+        const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(task.id)}/files`, { cache:'no-store' });
+        const data = await response.json();
+        // 中文注释：使用稳定的项目序号作为界面名称，避免多个任务都显示为 input.apk。
+        activeProjectTask = { ...task, displayName:`项目 ${String(activeProjectTasks.indexOf(task) + 1).padStart(2, '0')}` }; activeProjectFiles = data.files || []; activeProjectPath = '';
+        renderDirectoryBrowser(activeProjectFiles, '');
+      } catch (error) { browser.innerHTML = '<p class="file-empty error-text">无法读取该软件文件夹，请确认 Java API 已启动。</p>'; }
+    }
+    // 中文注释：按当前目录显示直接子项，并通过面包屑返回任意上级目录。
+    function renderDirectoryBrowser(files, currentPath) {
+      activeProjectPath = currentPath;
+      const browser = document.getElementById('file-browser'); if (!browser) return;
+      const prefix = currentPath ? `${currentPath}/` : '';
+      const children = new Map();
+      files.filter((file) => file.startsWith(prefix)).forEach((file) => { const rest = file.slice(prefix.length); const part = rest.split('/')[0]; if (part) children.set(part, rest.includes('/')); });
+      const crumbs = ['web-work', activeProjectTask?.displayName || '软件文件夹'].concat(currentPath ? currentPath.split('/') : []);
+      const crumbHtml = crumbs.map((part, index) => { const path = index < 2 ? '' : crumbs.slice(2, index + 1).join('/'); const action = index === 0 ? 'renderTaskRoot()' : `openProjectDirectory(decodeURIComponent('${encodeURIComponent(path)}'))`; return `<button class="breadcrumb ${index === crumbs.length - 1 ? 'breadcrumb-current' : ''}" onclick="${action}">${escapeHtml(part)}</button>${index < crumbs.length - 1 ? '<span>/</span>' : ''}`; }).join('');
+      const rows = Array.from(children.entries()).sort((a,b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0])).map(([name, directory]) => directory ? `<button class="file-folder" onclick="openProjectDirectory(decodeURIComponent('${encodeURIComponent(prefix + name)}'))"><i class="ti ti-folder"></i><span><strong>${escapeHtml(name)}</strong><small>文件夹</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>` : `<div class="file-row"><span><i class="ti ti-file"></i>${escapeHtml(name)}</span><small>文件</small></div>`).join('');
+      browser.innerHTML = `<div class="file-breadcrumb">${crumbHtml}</div><div class="file-root-title"><span>${escapeHtml(currentPath || activeProjectTask?.displayName || '项目文件')}</span><small>${children.size} 个项目</small></div>${rows || '<p class="file-empty">当前目录为空。</p>'}`;
+    }
+    // 中文注释：进入指定项目目录，重新计算当前目录下的直接子项。
+    function openProjectDirectory(path) { renderDirectoryBrowser(activeProjectFiles, path); }
+    // 中文注释：把后端返回的相对路径构造成可展开的目录树，避免平铺全部文件。
+    function renderFileTree(files) {
+      const root = {};
+      files.forEach((file) => { let node = root; file.split('/').forEach((part, index, parts) => { node[part] = node[part] || (index === parts.length - 1 ? null : {}); if (node[part]) node = node[part]; }); });
+      function render(node, prefix) { return Object.keys(node).sort((a,b) => (node[a] === null ? 1 : 0) - (node[b] === null ? 1 : 0) || a.localeCompare(b)).map((name) => { const path = prefix ? `${prefix}/${name}` : name; if (node[name] === null) return `<div class="info-row"><span><i class="ti ti-file" style="color:var(--text-tertiary);margin-right:8px"></i>${escapeHtml(path)}</span><span>文件</span></div>`; return `<details class="tree-dir" style="border-bottom:1px solid var(--border-subtle);padding:10px 0"><summary style="cursor:pointer;color:var(--accent-secondary);list-style:none"><i class="ti ti-folder" style="margin-right:8px"></i>${escapeHtml(path)}</summary><div style="padding-left:18px">${render(node[name], path)}</div></details>`; }).join(''); }
+      return render(root, '');
+    }
+    // 中文注释：转义文件名中的特殊字符，防止文件名被当作 HTML 解析。
+    function escapeHtml(value) { return value.replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
+    // 中文注释：调用后端构建当前已解码目录，并复用同一日志轮询通道。
+    async function buildCurrentTask(event) {
+      event.preventDefault();
+      if (!currentTaskId) return;
+      if (event.currentTarget.disabled) return;
+      const detail = document.querySelector('.dropzone p');
+      detail.textContent = '正在构建 APK · 请查看右侧日志';
+      event.currentTarget.disabled = true;
+      event.currentTarget.textContent = '构建中…';
+      try {
+        const outputDir = localStorage.getItem('apktool-output-dir') || 'web-work';
+        const response = await fetch(`http://127.0.0.1:8787/api/tasks/${currentTaskId}/build?output=${encodeURIComponent(outputDir)}`, { method:'POST' });
+        if (!response.ok) throw new Error((await response.json()).error || '构建启动失败');
+        pollTask(currentTaskId);
+      } catch (error) { detail.textContent = `构建失败：${error.message}`; showToast(`构建失败：${error.message}`, true); }
+    }
+    // 中文注释：调用真实健康检查接口，反馈 Java 后端和 Apktool CLI 是否在线。
+    async function checkCliStatus() {
+      const button = document.getElementById('health-button');
+      button.disabled = true; button.textContent = '检查中…';
+      try {
+        const response = await fetch('http://127.0.0.1:8787/api/health');
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error('后端返回异常');
+        button.textContent = 'CLI 已连接';
+        button.style.color = 'var(--accent-primary)';
+      } catch (error) {
+        button.disabled = false; button.textContent = '后端未连接，重试';
+        showToast('无法连接 Java API，请确认已运行 start-apktool-studio.bat', true);
+      }
+    }
+    // 中文注释：启动时恢复上次选择的预设或五色自定义方案，配置仅保存在当前浏览器。
+    function restorePalette() {
+      if (!paletteEngine) return;
+      try {
+        const customColors = JSON.parse(localStorage.getItem('apktool-custom-palette') || 'null');
+        if (Array.isArray(customColors) && customColors.length === 5) { paletteEngine.setCustomPalette(customColors, '我的配色'); return; }
+      } catch (error) { localStorage.removeItem('apktool-custom-palette'); }
+      paletteEngine.setPalette(localStorage.getItem('apktool-palette') || 'APKTOOL');
+    }
+    // 中文注释：将预设主题渲染为可识别的五段色带，点击即可即时预览。
+    function renderThemeSettings() {
+      if (!paletteEngine) return;
+      const grid = document.getElementById('theme-grid'); if (!grid) return;
+      const active = paletteEngine.getPalette();
+      grid.innerHTML = palettes.map((item) => `<button type="button" class="theme-choice ${active.id === item.id ? 'active' : ''}" onclick="applyPresetPalette('${item.id}')"><span class="theme-swatch">${item.colors.map((color) => `<i style="background:${color}"></i>`).join('')}</span><span><strong>${item.name}</strong><small>${item.id === 'APKTOOL' ? '默认主题' : '内置主题'}</small></span></button>`).join('');
+      const colors = active.colors || palettes[0].colors;
+      colors.forEach((color, index) => { const input = document.getElementById(`color-${index + 1}`); if (input) input.value = color; });
+    }
+    // 中文注释：切换预设时清除旧的自定义记录，保证下次启动仍使用所选预设。
+    function applyPresetPalette(id) {
+      if (!paletteEngine) return;
+      paletteEngine.setPalette(id);
+      localStorage.setItem('apktool-palette', id);
+      localStorage.removeItem('apktool-custom-palette');
+      renderThemeSettings();
+      showToast('已应用内置配色');
+    }
+    // 中文注释：五个颜色共同生成背景、面板、强调色和高光等语义变量。
+    function applyCustomPalette() {
+      if (!paletteEngine) return;
+      const colors = [1,2,3,4,5].map((index) => document.getElementById(`color-${index}`).value.toUpperCase());
+      paletteEngine.setCustomPalette(colors, '我的配色');
+      localStorage.setItem('apktool-custom-palette', JSON.stringify(colors));
+      localStorage.removeItem('apktool-palette');
+      renderThemeSettings();
+      showToast('已应用自定义配色');
+    }
+    // 中文注释：保存构建输出目录，并在设置页再次打开时恢复该配置。
+    function saveOutputDir() {
+      const input = document.getElementById('output-dir');
+      if (!input || !input.value.trim() || input.value.includes('..') || input.value.includes(':')) { showToast('请输入项目目录内的相对路径，例如 web-work', true); return; }
+      localStorage.setItem('apktool-output-dir', input.value.trim());
+      showToast(`已保存，构建结果将放入当前项目/${input.value.trim()}`);
+    }
+    // 中文注释：使用页面内轻提示替代阻断式弹窗，让错误和成功反馈保持可见且不打断操作。
+    let toastTimer;
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.toggle('error', isError);
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3600);
+    }
+    // 中文注释：仅为两侧固定面板启用折射，避免大型文件列表反复截图影响性能和文字可读性。
+    window.addEventListener('load', () => {
+      if (typeof window.liquidGL !== 'function') return;
+      try {
+        window.apktoolLiquidGlass = window.liquidGL({
+          target: '.liquid-gl-target', snapshot: 'body', resolution: 1,
+          refraction: 0.014, aberration: 0.006, bevelDepth: 0.09, bevelWidth: 0.14,
+          frost: 1.4, shadow: true, specular: true, reveal: 'fade', tilt: false
+        });
+      } catch (error) { console.warn('liquidGL 初始化失败，已保留普通玻璃效果。', error); }
+    });
+  </script>
+</body>
+</html>
+
+
+

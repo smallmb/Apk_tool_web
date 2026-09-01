@@ -1,0 +1,27 @@
+/* Palette-driven component recipes. Consume semantic tokens; do not hard-code palette colors. */
+.dg-canvas {
+  color:var(--text-primary);
+  background:
+    radial-gradient(circle at 52% 38%,rgba(var(--ambient-primary-rgb),var(--ambient-primary-alpha)),transparent 36%),
+    radial-gradient(circle at 88% 8%,rgba(var(--ambient-secondary-rgb),var(--ambient-secondary-alpha)),transparent 28%),
+    linear-gradient(145deg,var(--canvas-base),var(--canvas-secondary));
+}
+.dg-panel {
+  position:relative; overflow:hidden;
+  background:linear-gradient(145deg,rgba(var(--surface-base-rgb),var(--surface-opacity)),rgba(var(--surface-strong-rgb),var(--surface-strong-opacity)));
+  border:1px solid var(--border-default); border-radius:var(--radius-panel);
+  box-shadow:var(--shadow-panel); backdrop-filter:blur(var(--blur)) saturate(115%);
+}
+.dg-panel::before {content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.075),transparent 20%,transparent 72%,rgba(255,255,255,.035));}
+.dg-card {position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(255,255,255,.075),rgba(var(--surface-soft-rgb),var(--surface-soft-opacity)));border:1px solid var(--border-strong);border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
+.dg-card::after {content:"";position:absolute;right:-18%;top:-55%;width:78%;height:180%;background:radial-gradient(ellipse,rgba(var(--accent-primary-rgb),var(--accent-glow-alpha)),rgba(var(--accent-primary-rgb),.12) 38%,transparent 70%);filter:blur(13px);transform:rotate(-12deg);pointer-events:none;}
+.dg-button-primary {border:1px solid rgba(var(--accent-primary-rgb),.38);background:rgba(var(--accent-primary-rgb),.15);color:var(--text-primary);}
+.dg-button-primary:hover,.dg-button-primary:focus-visible {border-color:rgba(var(--highlight-rgb),.42);box-shadow:0 0 22px rgba(var(--accent-primary-rgb),.16);}
+.dg-data-accent {color:var(--accent-primary);}
+.dg-focus-ring:focus-visible {outline:2px solid rgba(var(--highlight-rgb),.38);outline-offset:2px;}
+
+/* Optional blue-gold effect layer. Only active for a palette that explicitly requests it. */
+html[data-palette-effect="blue-gold-hybrid"] .dg-effect-surface {border-color:rgba(var(--highlight-rgb),.22);box-shadow:var(--shadow-panel),0 0 32px rgba(var(--highlight-rgb),.055);}
+html[data-palette-effect="blue-gold-hybrid"] .dg-effect-surface::after {content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 18% 22%,rgba(var(--highlight-rgb),.24) 0 1px,transparent 1.8px),radial-gradient(circle at 76% 36%,rgba(var(--highlight-rgb),.18) 0 1.1px,transparent 2px),radial-gradient(circle at 86% 74%,rgba(var(--highlight-rgb),.20) 0 1px,transparent 1.8px);mix-blend-mode:screen;opacity:.6;}
+
+html[data-palette-effect="blue-gold-hybrid"] .dg-button-primary {background:linear-gradient(110deg,rgba(var(--accent-primary-rgb),.30) 0%,rgba(var(--accent-primary-rgb),.18) 68%,rgba(var(--highlight-rgb),.22) 100%);border-color:rgba(var(--highlight-rgb),.36);}

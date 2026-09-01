@@ -1,0 +1,23 @@
+:root {
+  /* Raw palette — default US-00 teal-green */
+  --palette-c1:#02100D; --palette-c2:#0B3A30; --palette-c3:#10DF9A; --palette-c4:#66CDB1; --palette-c5:#C8F5E8;
+
+  /* Semantic color tokens. Palette Engine rewrites these at runtime. */
+  --canvas-base:#020807; --canvas-secondary:#07100E;
+  --surface-base-rgb:15,23,21; --surface-strong-rgb:7,13,12; --surface-soft-rgb:22,30,27;
+  --accent-primary:#10DF9A; --accent-primary-rgb:16,223,154;
+  --accent-secondary:#66CDB1; --accent-secondary-rgb:102,205,177;
+  --highlight:#C8F5E8; --highlight-rgb:200,245,232;
+  --ambient-primary-rgb:11,58,48; --ambient-secondary-rgb:200,245,232;
+  --text-primary:#F3F6F5; --text-secondary:#B7C0BD; --text-tertiary:#8F9995;
+  --border-subtle:rgba(255,255,255,.065); --border-default:rgba(255,255,255,.105); --border-strong:rgba(255,255,255,.16);
+
+  /* Material controls */
+  --palette-intensity:.55; --ambient-strength:.42; --surface-tint:.28; --accent-usage:.34;
+  --ambient-primary-alpha:.0904; --ambient-secondary-alpha:.0494; --accent-glow-alpha:.3972;
+  --surface-opacity:.82; --surface-strong-opacity:.88; --surface-soft-opacity:.66;
+  --blur:16px; --radius-panel:24px; --radius-card:30px; --radius-control:14px;
+  --space-1:6px; --space-2:10px; --space-3:14px; --space-4:18px; --space-5:24px;
+  --shadow-panel:0 24px 70px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.07);
+  --shadow-card:0 18px 36px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.09);
+}
