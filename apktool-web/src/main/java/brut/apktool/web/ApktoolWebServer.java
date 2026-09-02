@@ -128,6 +128,7 @@ public final class ApktoolWebServer {
             if ("DELETE".equalsIgnoreCase(exchange.getRequestMethod()) && parts.length == 4) { deleteTask(task); sendJson(exchange, 200, "{\"ok\":true}"); return; }
             if (parts.length == 5 && "logs".equals(parts[4])) { sendJson(exchange, 200, task.logsJson()); return; }
             if (parts.length == 5 && "files".equals(parts[4])) { sendJson(exchange, 200, task.filesJson()); return; }
+            if (parts.length == 5 && "bundle".equals(parts[4])) { sendJson(exchange, 200, task.bundleJson()); return; }
             if (parts.length == 5 && "decode".equals(parts[4])) { startProcess(exchange, task, false); return; }
             if (parts.length == 5 && "build".equals(parts[4])) { startProcess(exchange, task, true); return; }
             sendJson(exchange, 200, task.json());
@@ -265,6 +266,8 @@ public final class ApktoolWebServer {
         }
         String json() { return "{\"id\":\""+id+"\",\"name\":\""+escape(name)+"\",\"status\":\""+status+"\",\"running\":"+running+"}"; }
         String logsJson() { StringBuilder out=new StringBuilder("{\"logs\":["); synchronized(logs) { for(int i=0;i<logs.size();i++) { if(i>0) out.append(','); out.append('\"').append(escape(logs.get(i))).append('\"'); } } return out.append("]}").toString(); }
+        /** 中文注释：读取项目内 APKS 压缩包的真实分包名称和大小。 */
+        String bundleJson() throws IOException { StringBuilder out=new StringBuilder("{\"entries\":["); boolean first=true; try (java.util.stream.Stream<Path> stream=Files.list(dir)) { for (Path file : (Iterable<Path>)stream::iterator) if (file.getFileName().toString().toLowerCase().endsWith(".apks")) try (ZipFile zip=new ZipFile(file.toFile())) { java.util.Enumeration<? extends ZipEntry> entries=zip.entries(); while(entries.hasMoreElements()){ ZipEntry entry=entries.nextElement(); if(entry.isDirectory()) continue; if(!first) out.append(','); first=false; out.append("{\"name\":\"").append(escape(entry.getName())).append("\",\"size\":").append(entry.getSize()).append('}'); } } } return out.append("]}").toString(); }
         /** 中文注释：优先列出自动解码目录；对于手动放入 web-work 的项目，直接列出项目根目录。 */
         String filesJson() throws IOException { Path decoded = dir.resolve("decoded"); Path root = Files.isDirectory(decoded) ? decoded : dir; StringBuilder out = new StringBuilder("{\"files\":["); boolean first = true; try (java.util.stream.Stream<Path> stream = Files.walk(root)) { java.util.Iterator<Path> iterator = stream.filter(Files::isRegularFile).filter(file -> !file.getFileName().toString().equals(".apktool-studio.json")).sorted().iterator(); while (iterator.hasNext()) { Path file = iterator.next(); if (!first) out.append(','); first = false; out.append('\"').append(escape(root.relativize(file).toString().replace('\\','/'))).append('\"'); } } return out.append("]}").toString(); }
     }

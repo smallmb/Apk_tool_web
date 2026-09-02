@@ -162,8 +162,25 @@
     .apks-modal-close { position:absolute; top:10px; right:12px; width:28px; height:28px; border:0; color:var(--text-tertiary); background:transparent; font-size:22px; cursor:pointer; }
     .apks-modal p { margin:0 0 18px; color:var(--text-secondary); font-size:12px; line-height:1.6; }
     .apks-modal-actions { display:flex; justify-content:flex-end; gap:8px; }
+    .apks-entry-list { display:grid; gap:6px; max-height:180px; margin:12px 0; overflow:auto; }
+    .apks-entry { display:flex; justify-content:space-between; gap:12px; padding:7px 9px; border:1px solid var(--border-subtle); border-radius:7px; color:var(--text-secondary); font-size:11px; }
+    .apks-entry small { color:var(--text-tertiary); white-space:nowrap; }
     .dropzone #build-button { display:none!important; }
     .file-actions { display:flex; gap:8px; align-items:center; }
+    .file-search { width:100%; margin:0 0 12px; padding:9px 11px; border:1px solid var(--border-default); border-radius:9px; color:var(--text-primary); background:rgba(255,255,255,.045); outline:0; }
+    .file-search:focus { border-color:var(--accent-primary); }
+    .project-tabs { display:flex; gap:4px; overflow-x:auto; margin:0 0 14px; padding:4px; border-bottom:1px solid var(--border-subtle); }
+    .page-tabs { display:flex; gap:4px; overflow-x:auto; margin:0 0 18px; padding:4px; border-bottom:1px solid var(--border-subtle); }
+    .page-tab { flex:0 0 auto; padding:8px 14px; border:1px solid transparent; border-radius:8px 8px 0 0; color:var(--text-tertiary); background:transparent; cursor:pointer; }
+    .page-tab:hover, .page-tab.active { color:var(--text-primary); background:rgba(var(--accent-primary-rgb),.1); }
+    .page-tab.active { border-color:var(--border-default); border-bottom-color:var(--accent-primary); }
+    .page-tab, .project-tab { position:relative; display:inline-flex; align-items:center; gap:7px; }
+    .tab-close { display:inline-flex; visibility:hidden; align-items:center; justify-content:center; width:16px; height:16px; padding:0; border:0; color:var(--text-tertiary); background:transparent; cursor:pointer; }
+    .page-tab:hover .tab-close, .project-tab:hover .tab-close { visibility:visible; }
+    .tab-close:hover { color:var(--text-primary); background:rgba(255,255,255,.12); }
+    .project-tab { flex:0 0 auto; min-width:max-content; max-width:none; padding:9px 13px; border:1px solid transparent; border-radius:8px 8px 0 0; color:var(--text-tertiary); background:transparent; white-space:nowrap; cursor:pointer; }
+    .project-tab:hover { color:var(--text-primary); background:rgba(255,255,255,.04); }
+    .project-tab.active { color:var(--text-primary); border-color:var(--border-default); border-bottom-color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.1); }
     #reset-decode-button { margin-left:8px; }
     .theme-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px; }
     .theme-choice { display:flex; align-items:center; gap:10px; min-height:58px; padding:10px; color:var(--text-secondary); background:rgba(255,255,255,.035); border:1px solid var(--border-default); border-radius:12px; text-align:left; }
@@ -274,6 +291,10 @@
     // 中文注释：从浏览器本地存储恢复已导入的项目分组，刷新页面后仍保留会话入口。
     const importedProjectGroups = JSON.parse(localStorage.getItem('apktool-project-groups') || '[]');
     const projectSessionMeta = JSON.parse(localStorage.getItem('apktool-project-session-meta') || '{}');
+    const tabOrder = JSON.parse(localStorage.getItem('apktool-tab-order') || '{}');
+    let pendingApksEntries = [];
+    // 中文注释：读取 APKS ZIP 中央目录，获取真实分包名称和文件大小。
+    async function readApksEntries(file) { const buffer = new Uint8Array(await file.arrayBuffer()); for (let i = buffer.length - 22; i >= Math.max(0, buffer.length - 65557); i--) if (buffer[i] === 0x50 && buffer[i + 1] === 0x4b && buffer[i + 2] === 0x05 && buffer[i + 3] === 0x06) { const view = new DataView(buffer.buffer); const count = view.getUint16(i + 10, true); const offset = view.getUint32(i + 16, true); const entries = []; let cursor = offset; for (let n = 0; n < count; n++) { if (view.getUint32(cursor, true) !== 0x02014b50) break; const size = view.getUint32(cursor + 24, true); const nameLength = view.getUint16(cursor + 28, true); const extraLength = view.getUint16(cursor + 30, true); const commentLength = view.getUint16(cursor + 32, true); const name = new TextDecoder().decode(buffer.slice(cursor + 46, cursor + 46 + nameLength)); entries.push({ name, size }); cursor += 46 + nameLength + extraLength + commentLength; } return entries; } return []; }
     // 中文注释：从本地选择文件夹，将每个相对路径根目录登记为独立项目会话。
     projectFolderInput?.addEventListener('change', () => {
       const files = Array.from(projectFolderInput.files || []); if (!files.length) return;
@@ -290,11 +311,8 @@
       const title = document.querySelector('.dropzone h2');
       const detail = document.querySelector('.dropzone p');
       const isApksBundle = /\.apks$|\.apk\.\d+s$/i.test(file.name);
-      // 中文注释：APKS 先确认用途，再上传文件，避免用户未确认就创建任务或开始反编译。
-      if (isApksBundle) {
-        const accepted = await showApksDialog(file.name);
-        if (!accepted) { title.textContent = '拖入 APK 开始分析'; detail.textContent = '支持 .apk、.apk.1、.apk.2、.apks · 文件只在本机处理'; return; }
-      }
+      // 中文注释：APKS 仅在用户确认转换后才上传，取消操作不会创建项目任务。
+      if (isApksBundle) { pendingApksEntries = await readApksEntries(file); const accepted = await showApksDialog(file.name); if (!accepted) { title.textContent = '拖入 APK 开始分析'; detail.textContent = '支持 .apk、.apk.1、.apk.2、.apks · 文件只在本机处理'; return; } }
       title.textContent = file.name;
       detail.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB · 正在上传到本地后端`;
       try {
@@ -318,7 +336,7 @@
       }
     }
     // 中文注释：显示项目内玻璃弹窗，替代浏览器原生确认框。
-    function showApksDialog(name) { return new Promise((resolve) => { const backdrop = document.createElement('div'); backdrop.className = 'apks-modal-backdrop'; const cancel = () => { backdrop.remove(); resolve(false); }; const renderChoice = () => { backdrop.innerHTML = `<section class="apks-modal" role="dialog" aria-modal="true"><button class="apks-modal-close" aria-label="关闭">×</button><h3>检测到 APK 分包集合</h3><p>${escapeHtml(name)} 是一个 APKS 分包文件。你可以查看集合内容，或提取 base.apk 后开始反编译。</p><div class="apks-modal-actions"><button class="secondary" data-choice="cancel">取消</button><button class="secondary" data-choice="view">查看分包集合</button><button class="primary" data-choice="convert">转换为 APK 并反编译</button></div></section>`; bind(); }; const bind = () => { backdrop.querySelector('.apks-modal-close')?.addEventListener('click', cancel); backdrop.querySelector('[data-choice="cancel"]')?.addEventListener('click', cancel); backdrop.querySelector('[data-choice="view"]')?.addEventListener('click', () => { backdrop.innerHTML = `<section class="apks-modal" role="dialog" aria-modal="true"><button class="apks-modal-close" aria-label="关闭">×</button><h3>APK 分包集合</h3><p><strong>${escapeHtml(name)}</strong> 已导入本地项目。集合通常包含 base.apk 和多个 split_config 分包，完整文件可在项目文件中查看。</p><div class="apks-modal-actions"><button class="secondary" data-choice="back">返回</button><button class="primary" data-choice="close">关闭</button></div></section>`; backdrop.querySelector('.apks-modal-close').addEventListener('click', cancel); backdrop.querySelector('[data-choice="back"]').addEventListener('click', renderChoice); backdrop.querySelector('[data-choice="close"]').addEventListener('click', cancel); }); backdrop.querySelector('[data-choice="convert"]')?.addEventListener('click', () => { backdrop.remove(); resolve(true); }); }; backdrop.addEventListener('click', (event) => { if (event.target === backdrop) cancel(); }); document.addEventListener('keydown', function onKey(event) { if (event.key === 'Escape') { document.removeEventListener('keydown', onKey); cancel(); } }); document.body.appendChild(backdrop); renderChoice(); }); }
+    function showApksDialog(name, taskId) { return new Promise((resolve) => { const backdrop = document.createElement('div'); backdrop.className = 'apks-modal-backdrop'; const cancel = () => { backdrop.remove(); resolve(false); }; const renderChoice = () => { backdrop.innerHTML = `<section class="apks-modal" role="dialog" aria-modal="true"><button class="apks-modal-close" aria-label="关闭">×</button><h3>检测到 APK 分包集合</h3><p>${escapeHtml(name)} 是一个 APKS 分包文件。你可以查看集合内容，或提取 base.apk 后开始反编译。</p><div class="apks-modal-actions"><button class="secondary" data-choice="cancel">取消</button><button class="secondary" data-choice="view">查看分包集合</button><button class="primary" data-choice="convert">转换为 APK 并反编译</button></div></section>`; bind(); }; const bind = () => { backdrop.querySelector('.apks-modal-close')?.addEventListener('click', cancel); backdrop.querySelector('[data-choice="cancel"]')?.addEventListener('click', cancel); backdrop.querySelector('[data-choice="view"]')?.addEventListener('click', () => { backdrop.innerHTML = `<section class="apks-modal" role="dialog" aria-modal="true"><button class="apks-modal-close" aria-label="关闭">×</button><h3>APK 分包集合</h3><p><strong>${escapeHtml(name)}</strong> 文件尚未导入项目，仅在此处预览。</p><div class="apks-entry-list">${pendingApksEntries.length ? pendingApksEntries.map((entry) => `<div class="apks-entry"><span>${escapeHtml(entry.name)}</span><small>${entry.size > 0 ? (entry.size / 1024 / 1024).toFixed(2) + " MB" : "未知大小"}</small></div>`).join("") : "未能读取分包目录"}</div><div class="apks-modal-actions"><button class="secondary" data-choice="back">返回</button><button class="primary" data-choice="close">关闭</button></div></section>`; backdrop.querySelector('.apks-modal-close').addEventListener('click', cancel); backdrop.querySelector('[data-choice="back"]').addEventListener('click', renderChoice); backdrop.querySelector('[data-choice="close"]').addEventListener('click', cancel); }); backdrop.querySelector('[data-choice="convert"]')?.addEventListener('click', () => { backdrop.remove(); resolve(true); }); }; backdrop.addEventListener('click', (event) => { if (event.target === backdrop) cancel(); }); document.addEventListener('keydown', function onKey(event) { if (event.key === 'Escape') { document.removeEventListener('keydown', onKey); cancel(); } }); document.body.appendChild(backdrop); renderChoice(); }); }
     apkInput.addEventListener('change', (event) => handleApkFile(event.target.files[0]));
     // 中文注释：拖入卡片时阻止浏览器默认打开文件，并显示明确的投放状态。
     ['dragenter','dragover'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => {
@@ -357,6 +375,8 @@
     };
     document.querySelectorAll('.nav button[data-page]').forEach((button) => button.addEventListener('click', () => {
       const page = button.dataset.page;
+      if (page !== 'files') document.getElementById('project-tabs')?.remove();
+      renderPageTabs(page);
       document.querySelectorAll('.nav button').forEach((item) => item.classList.toggle('active', item === button));
       const panel = document.getElementById('page-panel');
       const header = document.getElementById('page-header');
@@ -378,12 +398,17 @@
         if (page === 'files') loadProjectFiles(panel);
       }
     }));
+    // 中文注释：渲染工作台、Framework、设置和项目文件的统一页面标签状态。
+    function switchPageTab(page) { const button = document.querySelector(`.nav button[data-page="${page}"]`); if (button) button.click(); }
+    function renderPageTabs(activePage) { let host = document.getElementById('page-tabs'); if (!host) { host = document.createElement('div'); host.id = 'page-tabs'; host.className = 'page-tabs'; document.querySelector('.main')?.insertBefore(host, document.getElementById('page-header')); } const pages = [['workspace','工作台','ti-layout-dashboard'],['framework','Framework','ti-box'],['settings','设置','ti-adjustments']]; const order = tabOrder.pages || []; pages.sort((a,b) => (order.indexOf(a[0]) < 0 ? 999 : order.indexOf(a[0])) - (order.indexOf(b[0]) < 0 ? 999 : order.indexOf(b[0]))); host.innerHTML = pages.map(([id,label,icon]) => `<button class="page-tab${id === activePage ? ' active' : ''}" draggable="true" data-tab-page="${id}" onclick="switchPageTab('${id}')"><i class="ti ${icon}"></i> ${label}<span class="tab-close" title="关闭" onclick="event.stopPropagation();switchPageTab('workspace')">×</span></button>`).join(''); bindTabDrag(host); }
+    renderPageTabs('workspace');
     // 中文注释：读取后端任务，先把 web-work 下的每个任务显示为一个软件文件夹。
     async function loadProjectFiles(panel) {
       try {
         const taskResponse = await fetch('http://127.0.0.1:8787/api/tasks', { cache:'no-store' });
         const taskData = await taskResponse.json();
         panel.innerHTML += '<div class="divider"></div><div id="file-browser"></div>';
+        const oldTabs = document.getElementById('project-tabs'); if (oldTabs) oldTabs.remove();
         activeProjectTasks = taskData.tasks || [];
         renderTaskRoot();
         if (pendingProjectTaskId) { const taskId = pendingProjectTaskId; pendingProjectTaskId = ''; openProjectTask(taskId); }
@@ -415,6 +440,8 @@
     // 中文注释：保存当前任务、文件列表和目录，用于面包屑导航。
     let activeProjectTasks = [];
     let activeProjectTask = null;
+    // 中文注释：只记录用户实际打开过的项目标签，避免侧边栏项目自动全部出现在顶部。
+    let openProjectTabIds = [];
     let activeProjectFiles = [];
     let activeProjectPath = '';
     let pendingProjectTaskId = '';
@@ -434,6 +461,7 @@
     // 中文注释：根目录展示 web-work 下的软件任务文件夹，点击后进入任务内容。
     function renderTaskRoot() {
       const browser = document.getElementById('file-browser'); if (!browser) return;
+      renderProjectTabs();
       const sessions = activeProjectTasks.map((task, index) => {
         const selected = activeProjectTask && activeProjectTask.id === task.id ? ' active' : '';
         const title = task.name || `项目 ${String(index + 1).padStart(2, '0')}`;
@@ -443,6 +471,10 @@
       browser.innerHTML = `<div class="file-breadcrumb"><button class="breadcrumb breadcrumb-current">web-work</button></div><div class="file-root-title"><span>软件文件夹</span><small>web-work / ${activeProjectTasks.length} 个项目</small></div>${activeProjectTasks.map((task, index) => `<button class="file-folder" onclick="openProjectTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-folder"></i><span><strong>项目 ${String(index + 1).padStart(2, '0')}</strong><small>${escapeHtml(task.name || 'input.apk')} · ${escapeHtml(task.status || '待处理')} · 解码项目</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>`).join('') || '<p class="file-empty">暂无已解码项目，请先在工作台上传 APK。</p>'}`;
       renderSidebarProjects();
     }
+    // 中文注释：渲染项目文件页顶部的项目标签，支持在多个任务之间快速切换。
+    function renderProjectTabs() { const host = document.getElementById('page-tabs'); if (!host) return; host.querySelectorAll('.project-tab').forEach((tab) => tab.remove()); const tasks = openProjectTabIds.map((id) => activeProjectTasks.find((task) => task.id === id)).filter(Boolean); tasks.forEach((task) => { const label = projectSessionMeta[task.id]?.name || task.name || task.id; const tab = document.createElement('button'); tab.className = `project-tab${activeProjectTask?.id === task.id ? ' active' : ''}`; tab.draggable = true; tab.dataset.tabProject = task.id; tab.title = label; tab.innerHTML = `${escapeHtml(label)}<span class="tab-close" title="关闭标签">×</span>`; tab.onclick = () => openSidebarTask(task.id); tab.querySelector('.tab-close').onclick = (event) => { event.stopPropagation(); openProjectTabIds = openProjectTabIds.filter((id) => id !== task.id); if (activeProjectTask?.id === task.id) { activeProjectTask = null; activeProjectFiles = []; activeProjectPath = ''; renderTaskRoot(); } else renderProjectTabs(); }; host.appendChild(tab); }); bindTabDrag(host); }
+    // 中文注释：通过原生拖放事件调整标签顺序，支持页面标签和项目标签。
+    function bindTabDrag(host) { let dragged = null; host.querySelectorAll('[draggable="true"]').forEach((tab) => { tab.addEventListener('dragstart', () => { dragged = tab; tab.classList.add('tab-dragging'); }); tab.addEventListener('dragend', () => { dragged?.classList.remove('tab-dragging'); const pages = [...host.querySelectorAll('.page-tab')].map((item) => item.dataset.tabPage); const projects = [...host.querySelectorAll('.project-tab')].map((item) => item.dataset.tabProject); if (pages.length) tabOrder.pages = pages; if (projects.length) tabOrder.projects = projects; localStorage.setItem('apktool-tab-order', JSON.stringify(tabOrder)); dragged = null; }); tab.addEventListener('dragover', (event) => { event.preventDefault(); if (!dragged || dragged === tab) return; const rect = tab.getBoundingClientRect(); host.insertBefore(dragged, event.clientX < rect.left + rect.width / 2 ? tab : tab.nextSibling); }); }); }
     // 中文注释：在全局侧边栏展示项目文件夹及其会话列表。
     function renderSidebarProjects() {
       const host = document.getElementById('sidebar-projects'); if (!host) return;
@@ -458,7 +490,7 @@
     // 中文注释：关闭会话只从侧边栏隐藏，后端文件仍然保留，可通过刷新任务列表恢复。
     function closeProjectTask(event, taskId) { event.stopPropagation(); projectSessionMeta[taskId] = { ...(projectSessionMeta[taskId] || {}), closed: true }; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); renderSidebarProjects(); }
     // 中文注释：删除本地会话记录，不删除 web-work 中的实际项目文件。
-    async function deleteProjectTask(event, taskId) { event.stopPropagation(); const task = activeProjectTasks.find((item) => item.id === taskId); const label = projectSessionMeta[taskId]?.name || task?.name || taskId; if (!await showDeleteDialog(label)) return; try { const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(taskId)}`, { method:'DELETE' }); if (!response.ok) throw new Error('删除失败'); delete projectSessionMeta[taskId]; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); activeProjectTasks = activeProjectTasks.filter((item) => item.id !== taskId); if (activeProjectTask?.id === taskId) { activeProjectTask = null; activeProjectFiles = []; activeProjectPath = ''; } renderSidebarProjects(); if (document.getElementById('file-browser')) renderTaskRoot(); showToast(`已删除：${label}`); } catch (error) { showToast(error.message, true); } }
+    async function deleteProjectTask(event, taskId) { event.stopPropagation(); const task = activeProjectTasks.find((item) => item.id === taskId); const label = projectSessionMeta[taskId]?.name || task?.name || taskId; if (!await showDeleteDialog(label)) return; try { const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(taskId)}`, { method:'DELETE' }); if (!response.ok) throw new Error('删除失败'); delete projectSessionMeta[taskId]; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); activeProjectTasks = activeProjectTasks.filter((item) => item.id !== taskId); openProjectTabIds = openProjectTabIds.filter((id) => id !== taskId); if (activeProjectTask?.id === taskId) { activeProjectTask = null; activeProjectFiles = []; activeProjectPath = ''; } renderSidebarProjects(); if (document.getElementById('file-browser')) renderTaskRoot(); showToast(`已删除：${label}`); } catch (error) { showToast(error.message, true); } }
     // 中文注释：显示删除确认弹窗，确认后才会向后端发送彻底删除请求。
     function showDeleteDialog(name) { return new Promise((resolve) => { const backdrop = document.createElement('div'); backdrop.className = 'apks-modal-backdrop'; backdrop.innerHTML = `<section class="apks-modal" role="dialog" aria-modal="true"><button class="apks-modal-close" aria-label="关闭">×</button><h3>确认删除项目？</h3><p>将彻底删除以下项目及其 APK、反编译文件，删除后无法恢复：</p><p><strong>${escapeHtml(name)}</strong></p><div class="apks-modal-actions"><button class="secondary" data-choice="cancel">取消</button><button class="primary" data-choice="confirm">确认删除</button></div></section>`; document.body.appendChild(backdrop); const finish = (value) => { backdrop.remove(); resolve(value); }; backdrop.querySelector('.apks-modal-close').addEventListener('click', () => finish(false)); backdrop.querySelector('[data-choice="cancel"]').addEventListener('click', () => finish(false)); backdrop.querySelector('[data-choice="confirm"]').addEventListener('click', () => finish(true)); backdrop.addEventListener('click', (event) => { if (event.target === backdrop) finish(false); }); }); }
     // 中文注释：点击侧边栏任务时先切换项目文件页，再打开对应目录。
@@ -466,6 +498,7 @@
     // 中文注释：进入指定 APK 的解码目录，而不是在根目录展开文件树。
     async function openProjectTask(taskId) {
       const task = activeProjectTasks.find((item) => item.id === taskId); if (!task) return;
+      if (!openProjectTabIds.includes(taskId)) openProjectTabIds.push(taskId);
       touchProjectTask(taskId); renderSidebarProjects();
       const browser = document.getElementById('file-browser');
       browser.innerHTML = '<div class="file-loading"><span class="wait-spinner"></span>正在读取软件文件夹…</div>';
@@ -474,6 +507,7 @@
         const data = await response.json();
         // 中文注释：使用稳定的项目序号作为界面名称，避免多个任务都显示为 input.apk。
         activeProjectTask = { ...task, displayName:`项目 ${String(activeProjectTasks.indexOf(task) + 1).padStart(2, '0')}` }; activeProjectFiles = data.files || []; activeProjectPath = '';
+        renderProjectTabs();
         renderDirectoryBrowser(activeProjectFiles, '');
       } catch (error) { browser.innerHTML = '<p class="file-empty error-text">无法读取该软件文件夹，请确认 Java API 已启动。</p>'; }
     }
@@ -486,9 +520,13 @@
       files.filter((file) => file.startsWith(prefix)).forEach((file) => { const rest = file.slice(prefix.length); const part = rest.split('/')[0]; if (part) children.set(part, rest.includes('/')); });
       const crumbs = ['web-work', activeProjectTask?.displayName || '软件文件夹'].concat(currentPath ? currentPath.split('/') : []);
       const crumbHtml = crumbs.map((part, index) => { const path = index < 2 ? '' : crumbs.slice(2, index + 1).join('/'); const action = index === 0 ? 'renderTaskRoot()' : `openProjectDirectory(decodeURIComponent('${encodeURIComponent(path)}'))`; return `<button class="breadcrumb ${index === crumbs.length - 1 ? 'breadcrumb-current' : ''}" onclick="${action}">${escapeHtml(part)}</button>${index < crumbs.length - 1 ? '<span>/</span>' : ''}`; }).join('');
-      const rows = Array.from(children.entries()).sort((a,b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0])).map(([name, directory]) => directory ? `<button class="file-folder" onclick="openProjectDirectory(decodeURIComponent('${encodeURIComponent(prefix + name)}'))"><i class="ti ti-folder"></i><span><strong>${escapeHtml(name)}</strong><small>文件夹</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>` : `<div class="file-row"><span><i class="ti ti-file"></i>${escapeHtml(name)}</span><small>文件</small></div>`).join('');
-      browser.innerHTML = `<div class="file-breadcrumb">${crumbHtml}</div><div class="file-root-title"><span>${escapeHtml(currentPath || activeProjectTask?.displayName || '项目文件')}</span><span class="file-actions"><small>${children.size} 个项目</small><button class="secondary" onclick="buildCurrentTask(event)">构建 APK</button></span></div>${rows || '<p class="file-empty">当前目录为空。</p>'}`;
+      const rows = Array.from(children.entries()).sort((a,b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0])).map(([name, directory]) => { if (directory) return `<button class="file-folder" onclick="openProjectDirectory(decodeURIComponent('${encodeURIComponent(prefix + name)}'))"><i class="ti ti-folder"></i><span><strong>${escapeHtml(name)}</strong><small>文件夹</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>`; const info = fileTypeInfo(name); return `<div class="file-row"><span><i class="${info[0]}"></i>${escapeHtml(name)}</span><small>${info[1]}</small></div>`; }).join('');
+      browser.innerHTML = `<div class="file-breadcrumb">${crumbHtml}</div><div class="file-root-title"><span>${escapeHtml(currentPath || activeProjectTask?.displayName || '项目文件')}</span><span class="file-actions"><small>${children.size} 个项目</small><button class="secondary" onclick="buildCurrentTask(event)">构建 APK</button></span></div><input class="file-search" type="search" placeholder="搜索当前目录文件…" oninput="filterProjectFiles(this.value)">${rows || '<p class="file-empty">当前目录为空。</p>'}`;
     }
+    // 中文注释：按文件名即时过滤当前目录内容，不重新请求后端数据。
+    function filterProjectFiles(keyword) { const value = String(keyword || '').trim().toLowerCase(); document.querySelectorAll('#file-browser .file-folder, #file-browser .file-row').forEach((row) => { row.style.display = !value || row.textContent.toLowerCase().includes(value) ? '' : 'none'; }); }
+    // 中文注释：根据文件扩展名返回对应图标和中文类型标签。
+    function fileTypeInfo(name) { const lower = name.toLowerCase(); if (lower.endsWith('.xml')) return ['ti ti-file-code', 'XML']; if (lower.endsWith('.smali')) return ['ti ti-braces', 'Smali']; if (lower.endsWith('.json') || lower.endsWith('.yml') || lower.endsWith('.yaml')) return ['ti ti-file-description', '配置']; if (/\.(png|jpg|jpeg|webp|gif)$/.test(lower)) return ['ti ti-photo', '图片']; if (lower.endsWith('.apk') || lower.endsWith('.apks')) return ['ti ti-brand-android', 'APK']; if (lower.endsWith('.dex')) return ['ti ti-file-binary', 'DEX']; if (/\.(txt|md|log|properties)$/.test(lower)) return ['ti ti-file-text', '文本']; return ['ti ti-file', '文件']; }
     // 中文注释：进入指定项目目录，重新计算当前目录下的直接子项。
     function openProjectDirectory(path) { renderDirectoryBrowser(activeProjectFiles, path); }
     // 中文注释：把后端返回的相对路径构造成可展开的目录树，避免平铺全部文件。
@@ -600,6 +638,10 @@
   </script>
 </body>
 </html>
+
+
+
+
 
 
 
