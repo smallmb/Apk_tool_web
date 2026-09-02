@@ -69,7 +69,10 @@ public final class ApktoolWebServer {
                 Path decoded = dir.resolve("decoded");
                 // 中文注释：没有 input.apk 的目录视为用户手动放入的已解码项目。
                 if (Files.isRegularFile(input) || Files.isDirectory(decoded) || Files.isDirectory(dir)) {
-                    String name = Files.isRegularFile(input) ? input.getFileName().toString() : dir.getFileName().toString();
+                    // 中文注释：优先识别工作区中与项目目录同名的 APK 文件，避免显示默认 input.apk。
+                    Path siblingApk = workspace.resolve(dir.getFileName().toString() + ".apk");
+                    String fallbackName = Files.isRegularFile(siblingApk) ? siblingApk.getFileName().toString() : dir.getFileName().toString();
+                    String name = readProjectName(dir, fallbackName);
                     Task task = new Task(dir.getFileName().toString(), name, dir, input);
                     task.status = Files.isDirectory(decoded) || !Files.isRegularFile(input) ? "completed" : "uploaded";
                     task.log("已恢复历史任务，状态：" + task.status);
@@ -103,7 +106,10 @@ public final class ApktoolWebServer {
             Path dir = workspace.resolve(id).normalize();
             Files.createDirectories(dir);
             Path input = dir.resolve("input.apk");
-            copyLimited(exchange.getRequestBody(), input, MAX_UPLOAD_BYTES);
+            if (safeName.toLowerCase().endsWith(".apks")) {
+                Path bundle = dir.resolve(safeName); copyLimited(exchange.getRequestBody(), bundle, MAX_UPLOAD_BYTES); extractBaseApk(bundle, input, dir);
+            } else copyLimited(exchange.getRequestBody(), input, MAX_UPLOAD_BYTES);
+            writeProjectMetadata(dir, safeName);
             Task task = new Task(id, safeName, dir, input);
             tasks.put(id, task);
             sendJson(exchange, 201, task.json());
@@ -119,6 +125,7 @@ public final class ApktoolWebServer {
             if (parts.length < 4) { sendJson(exchange, 404, "{\"error\":\"缺少任务 ID\"}"); return; }
             Task task = tasks.get(parts[3]);
             if (task == null) { sendJson(exchange, 404, "{\"error\":\"任务不存在\"}"); return; }
+            if ("DELETE".equalsIgnoreCase(exchange.getRequestMethod()) && parts.length == 4) { deleteTask(task); sendJson(exchange, 200, "{\"ok\":true}"); return; }
             if (parts.length == 5 && "logs".equals(parts[4])) { sendJson(exchange, 200, task.logsJson()); return; }
             if (parts.length == 5 && "files".equals(parts[4])) { sendJson(exchange, 200, task.filesJson()); return; }
             if (parts.length == 5 && "decode".equals(parts[4])) { startProcess(exchange, task, false); return; }
@@ -200,15 +207,35 @@ public final class ApktoolWebServer {
     private static boolean handleOptions(HttpExchange e) throws IOException { if (!"OPTIONS".equalsIgnoreCase(e.getRequestMethod())) return false; addCors(e.getResponseHeaders()); e.sendResponseHeaders(204, -1); e.close(); return true; }
     private static String query(URI uri, String key) { for (String pair : uri.getRawQuery() == null ? new String[0] : uri.getRawQuery().split("&")) { String[] kv = pair.split("=", 2); if (kv.length == 2 && key.equals(kv[0])) try { return URLDecoder.decode(kv[1], "UTF-8"); } catch (Exception ignored) { return null; } } return null; }
     private static void sendJson(HttpExchange e, int code, String body) throws IOException { byte[] bytes = body.getBytes(StandardCharsets.UTF_8); addCors(e.getResponseHeaders()); e.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8"); e.sendResponseHeaders(code, bytes.length); try (OutputStream out = e.getResponseBody()) { out.write(bytes); } }
-    private static void addCors(Headers headers) { headers.set("Access-Control-Allow-Origin", "*"); headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS"); headers.set("Access-Control-Allow-Headers", "Content-Type"); }
+    /** 中文注释：删除任务目录及其上传 APK、反编译文件和元数据。 */
+    private void deleteTask(Task task) throws IOException { tasks.remove(task.id); if (Files.exists(task.dir) && task.dir.startsWith(workspace)) { try (java.util.stream.Stream<Path> stream = Files.walk(task.dir)) { stream.sorted(Comparator.reverseOrder()).forEach(path -> { try { Files.deleteIfExists(path); } catch (IOException ignored) { } }); } } Files.deleteIfExists(workspace.resolve(task.id + ".apk")); }
+    private static void addCors(Headers headers) { headers.set("Access-Control-Allow-Origin", "*"); headers.set("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS"); headers.set("Access-Control-Allow-Headers", "Content-Type"); }
     private static String escape(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\""); }
+    /** 中文注释：保存原始 APK 文件名，避免服务重启后退回显示 input.apk。 */
+    private static void writeProjectMetadata(Path dir, String name) {
+        try { Files.write(dir.resolve(".apktool-studio.json"), ("{\"name\":\"" + escape(name) + "\"}").getBytes(StandardCharsets.UTF_8)); } catch (IOException ignored) { }
+    }
+    /** 中文注释：读取项目元数据，旧项目没有元数据时使用目录名称作为安全回退。 */
+    private static String readProjectName(Path dir, String fallback) {
+        try { String value = new String(Files.readAllBytes(dir.resolve(".apktool-studio.json")), StandardCharsets.UTF_8); java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\\"name\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"").matcher(value); return matcher.find() ? matcher.group(1) : fallback; } catch (IOException ignored) { return fallback; }
+    }
     /** 中文注释：返回后端当前任务列表，供前端项目文件页面使用。 */
-    private String tasksJson() { StringBuilder out = new StringBuilder("{\"tasks\":["); boolean first = true; for (Task task : tasks.values()) { if (!first) out.append(','); first = false; out.append(task.json()); } return out.append("]}").toString(); }
+    private String tasksJson() { tasks.values().removeIf(task -> !Files.isDirectory(task.dir)); StringBuilder out = new StringBuilder("{\"tasks\":["); boolean first = true; for (Task task : tasks.values()) { if (!first) out.append(','); first = false; out.append(task.json()); } return out.append("]}").toString(); }
     /** 中文注释：将下载工具产生的 app.apk.1、app.apk.2 等后缀统一还原为 APK 文件名。 */
     private static String normalizeApkName(String name) {
         String lower = name.toLowerCase();
+        if (lower.matches(".+\\.apk\\.\\d+s")) return name.replaceFirst("(?i)\\.apk\\.\\d+s$", ".apks");
         if (lower.matches(".+\\.apk\\.\\d+")) return name.replaceFirst("(?i)\\.\\d+$", "");
-        return lower.endsWith(".apk") ? name : null;
+        return lower.endsWith(".apk") || lower.endsWith(".apks") ? name : null;
+    }
+    /** 中文注释：解压 APKS 分包集合，提取 base.apk 作为 Apktool 的反编译入口。 */
+    private static void extractBaseApk(Path bundle, Path input, Path dir) throws IOException {
+        boolean found = false;
+        try (ZipFile zip = new ZipFile(bundle.toFile())) {
+            java.util.Enumeration<? extends ZipEntry> entries = zip.entries();
+            while (entries.hasMoreElements()) { ZipEntry entry = entries.nextElement(); if (entry.isDirectory()) continue; String name = entry.getName(); if (name.equalsIgnoreCase("base.apk") || name.endsWith("/base.apk")) { try (InputStream in = zip.getInputStream(entry)) { copyLimited(in, input, MAX_UPLOAD_BYTES); } found = true; } }
+        }
+        if (!found) throw new IOException("APKS 分包集合中未找到 base.apk");
     }
 
     /** 中文注释：内存中的任务状态，日志按顺序保存供前端轮询。 */
@@ -239,6 +266,6 @@ public final class ApktoolWebServer {
         String json() { return "{\"id\":\""+id+"\",\"name\":\""+escape(name)+"\",\"status\":\""+status+"\",\"running\":"+running+"}"; }
         String logsJson() { StringBuilder out=new StringBuilder("{\"logs\":["); synchronized(logs) { for(int i=0;i<logs.size();i++) { if(i>0) out.append(','); out.append('\"').append(escape(logs.get(i))).append('\"'); } } return out.append("]}").toString(); }
         /** 中文注释：优先列出自动解码目录；对于手动放入 web-work 的项目，直接列出项目根目录。 */
-        String filesJson() throws IOException { Path decoded = dir.resolve("decoded"); Path root = Files.isDirectory(decoded) ? decoded : dir; StringBuilder out = new StringBuilder("{\"files\":["); boolean first = true; try (java.util.stream.Stream<Path> stream = Files.walk(root)) { java.util.Iterator<Path> iterator = stream.filter(Files::isRegularFile).sorted().iterator(); while (iterator.hasNext()) { Path file = iterator.next(); if (!first) out.append(','); first = false; out.append('\"').append(escape(root.relativize(file).toString().replace('\\','/'))).append('\"'); } } return out.append("]}").toString(); }
+        String filesJson() throws IOException { Path decoded = dir.resolve("decoded"); Path root = Files.isDirectory(decoded) ? decoded : dir; StringBuilder out = new StringBuilder("{\"files\":["); boolean first = true; try (java.util.stream.Stream<Path> stream = Files.walk(root)) { java.util.Iterator<Path> iterator = stream.filter(Files::isRegularFile).filter(file -> !file.getFileName().toString().equals(".apktool-studio.json")).sorted().iterator(); while (iterator.hasNext()) { Path file = iterator.next(); if (!first) out.append(','); first = false; out.append('\"').append(escape(root.relativize(file).toString().replace('\\','/'))).append('\"'); } } return out.append("]}").toString(); }
     }
 }

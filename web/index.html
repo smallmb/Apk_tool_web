@@ -83,6 +83,12 @@
     .info-row span:last-child { color:var(--text-secondary); font-size:11px; text-align:right; overflow-wrap:anywhere; }
     .toast { position:fixed; right:28px; bottom:28px; z-index:10; max-width:min(380px,calc(100vw - 32px)); padding:12px 15px; border:1px solid var(--border-strong); border-radius:12px; color:var(--text-primary); background:rgba(7,28,23,.94); box-shadow:var(--shadow-panel); opacity:0; transform:translateY(12px); pointer-events:none; transition:opacity .2s ease, transform .2s ease; font-size:12px; line-height:1.5; }
     .toast.show { opacity:1; transform:translateY(0); }
+    .toast.center { top:50%; right:auto; bottom:auto; left:50%; transform:translate(-50%,-42%); padding:18px 24px; font-size:15px; box-shadow:0 18px 70px rgba(0,0,0,.45); }
+    .toast.center.show { transform:translate(-50%,-50%); }
+    .decode-dots { display:inline-flex; gap:5px; margin-left:6px; vertical-align:middle; }
+    .decode-dots i { width:5px; height:5px; border-radius:50%; background:currentColor; animation:decode-bounce .8s ease-in-out infinite; }
+    .decode-dots i:nth-child(2) { animation-delay:.12s; } .decode-dots i:nth-child(3) { animation-delay:.24s; }
+    @keyframes decode-bounce { 0%,60%,100% { transform:translateY(0); opacity:.45; } 30% { transform:translateY(-6px); opacity:1; } }
     .toast.error { border-color:rgba(255,130,130,.55); }
     .backend-wait { display:flex; align-items:center; gap:14px; margin-top:24px; padding:16px; border:1px solid rgba(244,201,120,.25); border-radius:14px; color:#f4c978; background:rgba(244,201,120,.06); }
     .backend-wait strong { display:block; font-size:13px; }
@@ -118,10 +124,21 @@
     .project-group-head small { margin-left:auto; color:var(--text-tertiary); font-size:10px; }
     .project-sessions { display:grid; gap:2px; margin:5px 0 0 28px; }
     .project-session { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; width:100%; min-height:38px; padding:8px 10px; border:1px solid transparent; border-radius:10px; color:var(--text-secondary); background:transparent; text-align:left; cursor:pointer; }
+    .project-session-main { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; min-width:0; padding:0; border:0; color:inherit; background:transparent; text-align:left; cursor:pointer; }
+    .project-session-edit { width:100%; min-width:0; padding:5px 2px; border:0; outline:0; color:var(--text-primary); background:transparent; font:inherit; font-size:12px; }
+    .project-session.editing { grid-template-columns:1fr; padding:4px 8px; border-color:rgba(231,121,59,.9); background:rgba(231,121,59,.08); box-shadow:0 0 0 2px rgba(231,121,59,.12); }
+    .project-session.editing .project-session-actions, .project-session.editing:hover .project-session-actions { display:none; }
+    .project-session.editing .project-session-main { grid-template-columns:1fr; width:100%; }
+    .project-session.editing .project-session-meta { display:none; }
     .project-session:hover { color:var(--text-primary); background:rgba(255,255,255,.045); }
     .project-session.active { color:var(--text-primary); border-color:#e7793b; background:rgba(231,121,59,.07); box-shadow:0 0 0 1px rgba(231,121,59,.12); }
     .project-session-title { overflow:hidden; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
     .project-session-meta { color:var(--text-tertiary); font-size:10px; white-space:nowrap; }
+    .project-session-actions { display:none; gap:3px; }
+    .project-session:hover .project-session-actions { display:flex; }
+    .project-session:hover .project-session-meta { display:none; }
+    .project-session-actions button { width:22px; height:22px; padding:0; border:0; border-radius:5px; color:var(--text-tertiary); background:transparent; cursor:pointer; }
+    .project-session-actions button:hover { color:var(--text-primary); background:rgba(255,255,255,.1); }
     .project-empty { margin:18px 0 8px 28px; color:var(--text-tertiary); font-size:12px; }
     .sidebar-projects { margin-top:26px; max-height:calc(100vh - 260px); overflow:auto; }
     .project-import { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; color:var(--text-secondary); font-size:13px; font-weight:600; }
@@ -139,6 +156,15 @@
     .sidebar-projects .project-session { min-height:34px; padding:7px 8px; }
     .file-loading { display:flex; align-items:center; gap:10px; color:var(--text-secondary); }
     .error-text { color:#ff9c9c; }
+    .apks-modal-backdrop { position:fixed; inset:0; z-index:50; display:grid; place-items:center; padding:20px; background:rgba(0,0,0,.52); backdrop-filter:blur(8px); }
+    .apks-modal { width:min(420px,100%); padding:24px; border:1px solid var(--border-default); border-radius:18px; color:var(--text-primary); background:rgba(17,31,30,.94); box-shadow:0 24px 80px rgba(0,0,0,.45); }
+    .apks-modal h3 { margin:0 0 8px; font-size:18px; }
+    .apks-modal-close { position:absolute; top:10px; right:12px; width:28px; height:28px; border:0; color:var(--text-tertiary); background:transparent; font-size:22px; cursor:pointer; }
+    .apks-modal p { margin:0 0 18px; color:var(--text-secondary); font-size:12px; line-height:1.6; }
+    .apks-modal-actions { display:flex; justify-content:flex-end; gap:8px; }
+    .dropzone #build-button { display:none!important; }
+    .file-actions { display:flex; gap:8px; align-items:center; }
+    #reset-decode-button { margin-left:8px; }
     .theme-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px; }
     .theme-choice { display:flex; align-items:center; gap:10px; min-height:58px; padding:10px; color:var(--text-secondary); background:rgba(255,255,255,.035); border:1px solid var(--border-default); border-radius:12px; text-align:left; }
     .theme-choice:hover, .theme-choice.active { color:var(--text-primary); border-color:rgba(var(--accent-primary-rgb),.62); background:rgba(var(--accent-primary-rgb),.09); }
@@ -176,7 +202,7 @@
     <main class="main">
       <header id="page-header" class="topbar"><div><div class="eyebrow">APK WORKBENCH / 01</div><h1>把 APK 拆开，<br><span style="color:var(--accent-primary)">看见它的结构。</span></h1><p class="lede">从一个 APK 开始，在本机完成解码、浏览与构建。文件不离开你的电脑。</p></div><div id="backend-status" class="status waiting"><i class="dot"></i><span>正在等待后端启动 · 已等待 0 秒</span></div></header>
       <section class="hero-grid">
-        <label class="dropzone glass card liquid-gl-target" for="apk-file"><div><div class="drop-icon">↑</div><h2>拖入 APK 开始分析</h2><p>支持 .apk、.apk.1、.apk.2 · 文件只在本机处理</p><button class="primary" type="button" onclick="document.getElementById('apk-file').click()">选择 APK 文件</button><button id="build-button" class="secondary" type="button" style="display:none;margin-left:8px" onclick="buildCurrentTask(event)">构建 APK</button><input id="apk-file" type="file" accept=".apk,.apk.*,.apk.1,.apk.2,application/vnd.android.package-archive" /></div></label>
+        <label class="dropzone glass card liquid-gl-target" for="apk-file"><div><div class="drop-icon">↑</div><h2>拖入 APK 开始分析</h2><p>支持 .apk、.apk.1、.apk.2、.apks · 文件只在本机处理</p><button id="select-apk-button" class="primary" type="button" onclick="document.getElementById('apk-file').click()">选择 APK 文件</button><button id="build-button" class="secondary" type="button" style="display:none;margin-left:8px" onclick="buildCurrentTask(event)">构建 APK</button><input id="apk-file" type="file" accept=".apk,.apk.*,.apk.1,.apk.2,application/vnd.android.package-archive" /></div></label>
         <article class="metric glass card liquid-gl-target"><div class="eyebrow">CURRENT ENGINE</div><div class="big">3.0.3</div><p>Smali 3.0.9-dev<br>Baksmali 3.0.9-dev</p><div class="divider"></div><div class="info-row"><span>运行平台</span><span>Windows x64</span></div><div class="info-row"><span>处理模式</span><span>本地隔离</span></div></article>
       </section>
       <div class="section-head"><h3>最近的任务</h3><a href="#" onclick="return false">查看全部 →</a></div>
@@ -239,37 +265,49 @@
       backendPollTimer = setInterval(pollBackendHealth, 1500);
     }
     startBackendHealthCheck();
+    // 中文注释：定期同步任务列表，让文件管理器中的删除操作及时反映到侧边栏。
+    setInterval(() => { if (backendReady) loadSidebarTasks(); }, 3000);
     // 中文注释：选择文件后上传到 Java 后端，并自动启动真实解码任务。
     const dropzone = document.querySelector('.dropzone');
     const apkInput = document.getElementById('apk-file');
     const projectFolderInput = document.getElementById('project-folder-input');
-    const importedProjectGroups = [];
+    // 中文注释：从浏览器本地存储恢复已导入的项目分组，刷新页面后仍保留会话入口。
+    const importedProjectGroups = JSON.parse(localStorage.getItem('apktool-project-groups') || '[]');
+    const projectSessionMeta = JSON.parse(localStorage.getItem('apktool-project-session-meta') || '{}');
     // 中文注释：从本地选择文件夹，将每个相对路径根目录登记为独立项目会话。
     projectFolderInput?.addEventListener('change', () => {
       const files = Array.from(projectFolderInput.files || []); if (!files.length) return;
       const groups = new Map();
       files.forEach((file) => { const root = (file.webkitRelativePath || file.name).split('/')[0] || '本地文件夹'; if (!groups.has(root)) groups.set(root, []); groups.get(root).push(file.name); });
-      groups.forEach((entries, name) => { const existing = importedProjectGroups.find((group) => group.name === name); if (existing) existing.count = entries.length; else importedProjectGroups.push({ name, count: entries.length, importedAt: Date.now() }); });
+      groups.forEach((entries, name) => { const existing = importedProjectGroups.find((group) => group.name === name); if (existing) { existing.count = entries.length; existing.updatedAt = Date.now(); } else importedProjectGroups.push({ name, count: entries.length, importedAt: Date.now(), updatedAt: Date.now() }); });
+      localStorage.setItem('apktool-project-groups', JSON.stringify(importedProjectGroups));
       renderSidebarProjects(); projectFolderInput.value = '';
     });
     // 中文注释：统一处理文件选择和拖拽释放，确保两种入口调用相同的上传逻辑。
     async function handleApkFile(file) {
       if (!file) return;
-      if (!/^.+\.apk(?:\.\d+)?$/i.test(file.name)) { showToast('请选择 .apk 或 .apk.数字 文件', true); return; }
+      if (!/^.+\.(?:apk|apks)(?:\.\d+|\.\d+s)?$/i.test(file.name)) { showToast('请选择 .apk、.apks 或分包文件', true); return; }
       const title = document.querySelector('.dropzone h2');
       const detail = document.querySelector('.dropzone p');
+      const isApksBundle = /\.apks$|\.apk\.\d+s$/i.test(file.name);
+      // 中文注释：APKS 先确认用途，再上传文件，避免用户未确认就创建任务或开始反编译。
+      if (isApksBundle) {
+        const accepted = await showApksDialog(file.name);
+        if (!accepted) { title.textContent = '拖入 APK 开始分析'; detail.textContent = '支持 .apk、.apk.1、.apk.2、.apks · 文件只在本机处理'; return; }
+      }
       title.textContent = file.name;
       detail.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB · 正在上传到本地后端`;
       try {
         // 中文注释：把 .apk.1、.apk.2 等下载后缀在上传时自动改回 .apk。
-        const uploadName = file.name.replace(/\.\d+$/i, '');
+        // 中文注释：兼容 .apk.1、.apk.1s 等分包后缀，统一转换为可识别的 APKS 名称。
+        const uploadName = /\.\d+s$/i.test(file.name) ? file.name.replace(/\.apk\.\d+s$/i, '.apks') : file.name.replace(/\.\d+$/i, '');
         const upload = await fetch(`http://127.0.0.1:8787/api/upload?name=${encodeURIComponent(uploadName)}`, { method:'POST', body:file });
         const task = await upload.json();
         if (!upload.ok) throw new Error(task.error || '上传失败');
         currentTaskId = task.id;
         const start = await fetch(`http://127.0.0.1:8787/api/tasks/${task.id}/decode`, { method:'POST' });
         if (!start.ok) throw new Error((await start.json()).error || '启动解码失败');
-        detail.textContent = '已开始解码 · 右侧日志会实时更新';
+        detail.innerHTML = '正在解码<span class="decode-dots" aria-label="解码进行中"><i></i><i></i><i></i></span> · 右侧日志会实时更新';
         const buildButton = document.getElementById('build-button');
         buildButton.style.display = 'inline-block';
         buildButton.disabled = true;
@@ -279,6 +317,8 @@
         detail.textContent = `连接后端失败：${error.message} · 请先启动 Java Web 服务`;
       }
     }
+    // 中文注释：显示项目内玻璃弹窗，替代浏览器原生确认框。
+    function showApksDialog(name) { return new Promise((resolve) => { const backdrop = document.createElement('div'); backdrop.className = 'apks-modal-backdrop'; const cancel = () => { backdrop.remove(); resolve(false); }; const renderChoice = () => { backdrop.innerHTML = `<section class="apks-modal" role="dialog" aria-modal="true"><button class="apks-modal-close" aria-label="关闭">×</button><h3>检测到 APK 分包集合</h3><p>${escapeHtml(name)} 是一个 APKS 分包文件。你可以查看集合内容，或提取 base.apk 后开始反编译。</p><div class="apks-modal-actions"><button class="secondary" data-choice="cancel">取消</button><button class="secondary" data-choice="view">查看分包集合</button><button class="primary" data-choice="convert">转换为 APK 并反编译</button></div></section>`; bind(); }; const bind = () => { backdrop.querySelector('.apks-modal-close')?.addEventListener('click', cancel); backdrop.querySelector('[data-choice="cancel"]')?.addEventListener('click', cancel); backdrop.querySelector('[data-choice="view"]')?.addEventListener('click', () => { backdrop.innerHTML = `<section class="apks-modal" role="dialog" aria-modal="true"><button class="apks-modal-close" aria-label="关闭">×</button><h3>APK 分包集合</h3><p><strong>${escapeHtml(name)}</strong> 已导入本地项目。集合通常包含 base.apk 和多个 split_config 分包，完整文件可在项目文件中查看。</p><div class="apks-modal-actions"><button class="secondary" data-choice="back">返回</button><button class="primary" data-choice="close">关闭</button></div></section>`; backdrop.querySelector('.apks-modal-close').addEventListener('click', cancel); backdrop.querySelector('[data-choice="back"]').addEventListener('click', renderChoice); backdrop.querySelector('[data-choice="close"]').addEventListener('click', cancel); }); backdrop.querySelector('[data-choice="convert"]')?.addEventListener('click', () => { backdrop.remove(); resolve(true); }); }; backdrop.addEventListener('click', (event) => { if (event.target === backdrop) cancel(); }); document.addEventListener('keydown', function onKey(event) { if (event.key === 'Escape') { document.removeEventListener('keydown', onKey); cancel(); } }); document.body.appendChild(backdrop); renderChoice(); }); }
     apkInput.addEventListener('change', (event) => handleApkFile(event.target.files[0]));
     // 中文注释：拖入卡片时阻止浏览器默认打开文件，并显示明确的投放状态。
     ['dragenter','dragover'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => {
@@ -291,6 +331,7 @@
     // 中文注释：定时读取任务状态和日志，直到解码完成或失败。
     async function pollTask(id) {
       const log = document.querySelector('.log');
+      let completionNotified = false;
       const timer = setInterval(async () => {
         try {
           const [statusResponse, logResponse] = await Promise.all([fetch(`http://127.0.0.1:8787/api/tasks/${id}`), fetch(`http://127.0.0.1:8787/api/tasks/${id}/logs`)]);
@@ -298,13 +339,16 @@
           // 中文注释：日志内容来自外部 APK 处理过程，使用转义文本避免破坏页面结构。
           log.innerHTML = data.logs.map((line, index) => `<div class="log-line"><span class="log-time">${index + 1}</span><span><b>CLI</b> ${escapeHtml(line)}</span></div>`).join('');
           const buildButton = document.getElementById('build-button');
-          if (status.status === 'completed') { buildButton.disabled = false; buildButton.textContent = '构建 APK'; }
+          const detail = document.querySelector('.dropzone p');
+          if (status.status === 'completed') { buildButton.disabled = false; buildButton.textContent = '构建 APK'; const selectButton = document.getElementById('select-apk-button'); if (selectButton) { selectButton.textContent = '查看项目文件'; selectButton.onclick = (event) => { event.preventDefault(); event.stopPropagation(); document.querySelector('.nav button[data-page="files"]')?.click(); }; } let resetButton = document.getElementById('reset-decode-button'); if (!resetButton) { resetButton = document.createElement('button'); resetButton.id = 'reset-decode-button'; resetButton.type = 'button'; resetButton.className = 'secondary'; resetButton.textContent = '重新解码'; resetButton.onclick = (event) => { event.preventDefault(); event.stopPropagation(); resetDecodeCard(); }; selectButton?.after(resetButton); } if (detail) detail.textContent = '解码完成 · 已生成项目文件'; if (!completionNotified) { completionNotified = true; showToast(`解码完成：${status.name || 'APK 项目'}`); } }
           if (status.status === 'building') { buildButton.disabled = true; buildButton.textContent = '构建中…'; }
-          if (status.status === 'failed') { buildButton.disabled = true; buildButton.textContent = '解码失败'; }
+          if (status.status === 'failed') { buildButton.disabled = true; buildButton.textContent = '解码失败'; if (detail) detail.textContent = '解码失败 · 请查看右侧日志'; }
           if (!status.running) clearInterval(timer);
         } catch (error) { clearInterval(timer); }
       }, 700);
     }
+    // 中文注释：恢复上传卡片初始状态，允许用户重新选择 APK 或 APKS 文件。
+    function resetDecodeCard() { const title = document.querySelector('.dropzone h2'); const detail = document.querySelector('.dropzone p'); const selectButton = document.getElementById('select-apk-button'); const buildButton = document.getElementById('build-button'); const resetButton = document.getElementById('reset-decode-button'); if (title) title.textContent = '拖入 APK 开始分析'; if (detail) detail.textContent = '支持 .apk、.apk.1、.apk.2、.apks · 文件只在本机处理'; if (selectButton) { selectButton.textContent = '选择 APK 文件'; selectButton.onclick = () => document.getElementById('apk-file').click(); } if (buildButton) { buildButton.disabled = true; buildButton.textContent = '构建 APK'; } resetButton?.remove(); }
     // 中文注释：让侧边栏入口切换到对应的页面视图，并保持当前工作台状态。
     const pageContent = {
       files: ['项目文件','浏览解码后的 Manifest、资源和 Smali 文件。','FILE EXPLORER','<div class="info-row"><span>当前项目</span><span>上传 APK 后可浏览</span></div><div class="info-row"><span>目录结构</span><span>AndroidManifest.xml · res · smali</span></div><button class="primary" style="margin-top:18px" onclick="document.querySelector(\"[data-page=workspace]\").click()">返回工作台</button>'],
@@ -402,15 +446,27 @@
     // 中文注释：在全局侧边栏展示项目文件夹及其会话列表。
     function renderSidebarProjects() {
       const host = document.getElementById('sidebar-projects'); if (!host) return;
-      const sessions = activeProjectTasks.map((task) => `<button class="project-session${activeProjectTask && activeProjectTask.id === task.id ? ' active' : ''}" onclick="openSidebarTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><span class="project-session-title">${escapeHtml(task.name || '未命名项目')}</span><span class="project-session-meta">${escapeHtml(formatTaskAge(task))}</span></button>`).join('');
+      const visibleTasks = activeProjectTasks.filter((task) => !projectSessionMeta[task.id]?.closed).sort((a, b) => (projectSessionMeta[b.id]?.lastAccess || 0) - (projectSessionMeta[a.id]?.lastAccess || 0));
+      const sessions = visibleTasks.map((task) => { const label = projectSessionMeta[task.id]?.name || task.name || '未命名项目'; return `<div class="project-session${activeProjectTask && activeProjectTask.id === task.id ? ' active' : ''}" data-task-id="${escapeHtml(task.id)}"><button class="project-session-main" title="${escapeHtml(label)}" onclick="openSidebarTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><span class="project-session-title">${escapeHtml(label)}</span><span class="project-session-meta">${escapeHtml(formatTaskAge(task))}</span></button><span class="project-session-actions"><button title="重命名" onclick="renameProjectTask(event, decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-pencil"></i></button><button title="关闭" onclick="closeProjectTask(event, decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-x"></i></button><button title="删除会话记录" onclick="deleteProjectTask(event, decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-trash"></i></button></span></div>`; }).join('');
       const imported = importedProjectGroups.map((group) => `<section class="project-group"><div class="project-group-head"><i class="ti ti-folder"></i><strong>${escapeHtml(group.name)}</strong></div><div class="project-sessions"><div class="project-session"><span class="project-session-title">${group.count} 个本地文件</span><span class="project-session-meta">刚刚</span></div></div></section>`).join('');
       host.innerHTML = `<div class="project-import"><span class="project-import-label"><i class="ti ti-folder-code"></i><span>项目文件</span></span><button title="从本地导入文件夹" onclick="document.getElementById('project-folder-input').click()"><i class="ti ti-plus"></i></button></div><section class="project-group"><div class="project-group-head"><i class="ti ti-folder"></i><strong>web-work</strong></div><div class="project-sessions">${sessions || '<p class="project-empty">暂无项目</p>'}</div></section>${imported}`;
     }
+    // 中文注释：记录会话最近访问时间，用于侧边栏排序。
+    function touchProjectTask(taskId) { projectSessionMeta[taskId] = { ...(projectSessionMeta[taskId] || {}), lastAccess: Date.now(), closed: false }; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); }
+    // 中文注释：重命名只修改界面会话名称，不改变后端任务目录。
+    function renameProjectTask(event, taskId) { event.stopPropagation(); const row = document.querySelector(`.project-session[data-task-id="${CSS.escape(taskId)}"]`); if (!row || row.querySelector('.project-session-edit')) return; row.classList.add('editing'); const title = row.querySelector('.project-session-title'); const current = title?.textContent || ''; const input = document.createElement('input'); input.className = 'project-session-edit'; input.value = current; input.setAttribute('aria-label', '会话名称'); title.replaceWith(input); ['click','pointerdown','mousedown'].forEach((type) => input.addEventListener(type, (e) => e.stopPropagation())); input.focus(); input.setSelectionRange(input.value.length, input.value.length); const save = () => { const next = input.value.trim(); if (next) projectSessionMeta[taskId] = { ...(projectSessionMeta[taskId] || {}), name: next }; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); renderSidebarProjects(); }; input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderSidebarProjects(); }); input.addEventListener('blur', save); }
+    // 中文注释：关闭会话只从侧边栏隐藏，后端文件仍然保留，可通过刷新任务列表恢复。
+    function closeProjectTask(event, taskId) { event.stopPropagation(); projectSessionMeta[taskId] = { ...(projectSessionMeta[taskId] || {}), closed: true }; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); renderSidebarProjects(); }
+    // 中文注释：删除本地会话记录，不删除 web-work 中的实际项目文件。
+    async function deleteProjectTask(event, taskId) { event.stopPropagation(); const task = activeProjectTasks.find((item) => item.id === taskId); const label = projectSessionMeta[taskId]?.name || task?.name || taskId; if (!await showDeleteDialog(label)) return; try { const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(taskId)}`, { method:'DELETE' }); if (!response.ok) throw new Error('删除失败'); delete projectSessionMeta[taskId]; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); activeProjectTasks = activeProjectTasks.filter((item) => item.id !== taskId); if (activeProjectTask?.id === taskId) { activeProjectTask = null; activeProjectFiles = []; activeProjectPath = ''; } renderSidebarProjects(); if (document.getElementById('file-browser')) renderTaskRoot(); showToast(`已删除：${label}`); } catch (error) { showToast(error.message, true); } }
+    // 中文注释：显示删除确认弹窗，确认后才会向后端发送彻底删除请求。
+    function showDeleteDialog(name) { return new Promise((resolve) => { const backdrop = document.createElement('div'); backdrop.className = 'apks-modal-backdrop'; backdrop.innerHTML = `<section class="apks-modal" role="dialog" aria-modal="true"><button class="apks-modal-close" aria-label="关闭">×</button><h3>确认删除项目？</h3><p>将彻底删除以下项目及其 APK、反编译文件，删除后无法恢复：</p><p><strong>${escapeHtml(name)}</strong></p><div class="apks-modal-actions"><button class="secondary" data-choice="cancel">取消</button><button class="primary" data-choice="confirm">确认删除</button></div></section>`; document.body.appendChild(backdrop); const finish = (value) => { backdrop.remove(); resolve(value); }; backdrop.querySelector('.apks-modal-close').addEventListener('click', () => finish(false)); backdrop.querySelector('[data-choice="cancel"]').addEventListener('click', () => finish(false)); backdrop.querySelector('[data-choice="confirm"]').addEventListener('click', () => finish(true)); backdrop.addEventListener('click', (event) => { if (event.target === backdrop) finish(false); }); }); }
     // 中文注释：点击侧边栏任务时先切换项目文件页，再打开对应目录。
     function openSidebarTask(taskId) { pendingProjectTaskId = taskId; document.querySelector('.nav button[data-page="files"]')?.click(); }
     // 中文注释：进入指定 APK 的解码目录，而不是在根目录展开文件树。
     async function openProjectTask(taskId) {
       const task = activeProjectTasks.find((item) => item.id === taskId); if (!task) return;
+      touchProjectTask(taskId); renderSidebarProjects();
       const browser = document.getElementById('file-browser');
       browser.innerHTML = '<div class="file-loading"><span class="wait-spinner"></span>正在读取软件文件夹…</div>';
       try {
@@ -431,7 +487,7 @@
       const crumbs = ['web-work', activeProjectTask?.displayName || '软件文件夹'].concat(currentPath ? currentPath.split('/') : []);
       const crumbHtml = crumbs.map((part, index) => { const path = index < 2 ? '' : crumbs.slice(2, index + 1).join('/'); const action = index === 0 ? 'renderTaskRoot()' : `openProjectDirectory(decodeURIComponent('${encodeURIComponent(path)}'))`; return `<button class="breadcrumb ${index === crumbs.length - 1 ? 'breadcrumb-current' : ''}" onclick="${action}">${escapeHtml(part)}</button>${index < crumbs.length - 1 ? '<span>/</span>' : ''}`; }).join('');
       const rows = Array.from(children.entries()).sort((a,b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0])).map(([name, directory]) => directory ? `<button class="file-folder" onclick="openProjectDirectory(decodeURIComponent('${encodeURIComponent(prefix + name)}'))"><i class="ti ti-folder"></i><span><strong>${escapeHtml(name)}</strong><small>文件夹</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>` : `<div class="file-row"><span><i class="ti ti-file"></i>${escapeHtml(name)}</span><small>文件</small></div>`).join('');
-      browser.innerHTML = `<div class="file-breadcrumb">${crumbHtml}</div><div class="file-root-title"><span>${escapeHtml(currentPath || activeProjectTask?.displayName || '项目文件')}</span><small>${children.size} 个项目</small></div>${rows || '<p class="file-empty">当前目录为空。</p>'}`;
+      browser.innerHTML = `<div class="file-breadcrumb">${crumbHtml}</div><div class="file-root-title"><span>${escapeHtml(currentPath || activeProjectTask?.displayName || '项目文件')}</span><span class="file-actions"><small>${children.size} 个项目</small><button class="secondary" onclick="buildCurrentTask(event)">构建 APK</button></span></div>${rows || '<p class="file-empty">当前目录为空。</p>'}`;
     }
     // 中文注释：进入指定项目目录，重新计算当前目录下的直接子项。
     function openProjectDirectory(path) { renderDirectoryBrowser(activeProjectFiles, path); }
@@ -525,6 +581,7 @@
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.classList.toggle('error', isError);
+      toast.classList.toggle('center', /^解码完成/.test(message));
       toast.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toast.classList.remove('show'), 3600);
@@ -535,14 +592,16 @@
       try {
         window.apktoolLiquidGlass = window.liquidGL({
           target: '.liquid-gl-target', snapshot: 'body', resolution: 1,
-          refraction: 0.014, aberration: 0.006, bevelDepth: 0.09, bevelWidth: 0.14,
-          frost: 1.4, shadow: true, specular: true, reveal: 'fade', tilt: false
+          refraction: 0.004, aberration: 0.001, bevelDepth: 0.06, bevelWidth: 0.1,
+          frost: 0.8, shadow: true, specular: true, reveal: 'fade', tilt: false
         });
       } catch (error) { console.warn('liquidGL 初始化失败，已保留普通玻璃效果。', error); }
     });
   </script>
 </body>
 </html>
+
+
 
 
 
