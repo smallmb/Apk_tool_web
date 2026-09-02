@@ -24,8 +24,8 @@ call :check_python || exit /b 1
 call :check_port 8787 "Java API" || exit /b 1
 call :check_port 5173 "Web UI" || exit /b 1
 call :write_log "Starting Java API and Web UI"
-start "Apktool Studio Java API" /D "%PROJECT_DIR%" cmd /k "\"%PROJECT_DIR%scripts\windows\apktool-studio.bat\" api"
-start "Apktool Studio Web UI" /D "%PROJECT_DIR%" cmd /k "\"%PROJECT_DIR%scripts\windows\apktool-studio.bat\" web"
+start "Apktool Studio Java API" /D "%PROJECT_DIR%" cmd /d /k call "%PROJECT_DIR%scripts\windows\apktool-studio.bat" api
+start "Apktool Studio Web UI" /D "%PROJECT_DIR%" cmd /d /k call "%PROJECT_DIR%scripts\windows\apktool-studio.bat" web
 timeout /t 2 /nobreak >nul
 echo Web UI:  http://127.0.0.1:5173/
 echo Java API: http://127.0.0.1:8787/api/health
