@@ -50,6 +50,14 @@ Applications are further getting split on qualifiers. Apktool has been built on 
 
 Suggestions: [#2283](https://github.com/iBotPeaches/Apktool/issues/2283), [#2218](https://github.com/iBotPeaches/Apktool/issues/2218), [#2880](https://github.com/iBotPeaches/Apktool/issues/2880)
 
+## Web 文件预览与 DEX 编辑
+
+- [x] 项目文件左右双卡片预览布局与固定高度。
+- [x] 文本、图片和 DEX 文件类型识别。
+- [x] 20MB 以内文件预览与内部滚动。
+- [ ] 接入 smali/baksmali 与 dexlib2，实现 DEX 结构化查看和 Smali 编辑。
+- [ ] 使用 D8 重新生成 multidex，并在构建 APK 前执行校验。
+
 ## Version relevant framework files
 Applications are built against a specific framework version. Apktool ships with the latest framework file at that
 time of release. So an application built with API 33 may be recompiled with API 36 which leads to issues.
