@@ -8,6 +8,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# 中文注释：允许 CodeQL 将分析结果上传到仓库的代码扫描页面。
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   analyze:
     name: Analyze
