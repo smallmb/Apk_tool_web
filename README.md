@@ -27,6 +27,24 @@
 
 首次启动会由 Gradle 编译相关模块，耗时会略长。看到 `Apktool Web API listening` 后即可在浏览器中使用。
 
+### 启动与停止脚本
+
+| 脚本 | 用途 |
+| --- | --- |
+| `start-apktool-studio.bat` | 同时启动 Java API 与 Web 界面。 |
+| `start-apktool-studio-api.bat` | 仅启动 Java API，便于排查后端问题。 |
+| `start-apktool-studio-web.bat` | 仅启动 Web 静态服务，便于调整界面。 |
+| `stop-apktool-studio.bat` | 停止监听 8787、5173 端口的 Apktool Studio 服务。 |
+
+启动器会校验 JDK、Python 与端口占用，并将启动事件写入 `logs/launcher.log`。若端口已被占用，请先关闭旧窗口，或运行 `stop-apktool-studio.bat` 后再启动。
+
+### 常见启动问题
+
+- `Java was not found`：安装 JDK 并将 `java`、`javac` 加入 `PATH`。仅安装 JRE 无法编译 Java API。
+- `Python was not found`：安装 Python 3，并在安装时勾选加入 `PATH`。
+- `port 8787/5173 is already in use`：已有服务仍在运行；先执行停止脚本，或结束提示中的进程。
+- Java 8 的 source/target 过时警告不会阻止当前构建；后续建议迁移到受支持的 LTS JDK。
+
 ## 命令行使用
 
 构建 CLI：
