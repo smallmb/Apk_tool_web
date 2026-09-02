@@ -108,6 +108,35 @@
     .file-row > span i { color:var(--text-tertiary); }
     .file-row small { color:var(--text-tertiary); font-size:11px; }
     .file-empty, .file-loading { margin:24px 0 6px; color:var(--text-tertiary); font-size:12px; }
+    /* 中文注释：项目导航采用分组文件夹与会话列表布局，突出当前选中的任务。 */
+    .project-navigator { margin-top:4px; color:var(--text-secondary); }
+    .project-section-label { margin:0 0 12px; color:var(--text-tertiary); font-size:10px; letter-spacing:.16em; text-transform:uppercase; }
+    .project-group { padding:2px 0 12px; border-bottom:1px solid var(--border-subtle); }
+    .project-group-head { display:flex; align-items:center; gap:10px; min-height:34px; color:var(--text-primary); }
+    .project-group-head > i { color:var(--text-primary); font-size:18px; }
+    .project-group-head strong { font-size:13px; }
+    .project-group-head small { margin-left:auto; color:var(--text-tertiary); font-size:10px; }
+    .project-sessions { display:grid; gap:2px; margin:5px 0 0 28px; }
+    .project-session { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; width:100%; min-height:38px; padding:8px 10px; border:1px solid transparent; border-radius:10px; color:var(--text-secondary); background:transparent; text-align:left; cursor:pointer; }
+    .project-session:hover { color:var(--text-primary); background:rgba(255,255,255,.045); }
+    .project-session.active { color:var(--text-primary); border-color:#e7793b; background:rgba(231,121,59,.07); box-shadow:0 0 0 1px rgba(231,121,59,.12); }
+    .project-session-title { overflow:hidden; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
+    .project-session-meta { color:var(--text-tertiary); font-size:10px; white-space:nowrap; }
+    .project-empty { margin:18px 0 8px 28px; color:var(--text-tertiary); font-size:12px; }
+    .sidebar-projects { margin-top:26px; max-height:calc(100vh - 260px); overflow:auto; }
+    .project-import { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; color:var(--text-secondary); font-size:13px; font-weight:600; }
+    .project-import-label { display:flex; align-items:center; gap:10px; }
+    .project-import-label i { color:var(--accent-primary); font-size:17px; }
+    .project-import button { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; padding:0; border:1px solid var(--border-default); border-radius:7px; color:var(--accent-primary); background:rgba(255,255,255,.04); cursor:pointer; }
+    .project-import button:hover { color:var(--text-primary); border-color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.12); }
+    .project-menu { display:flex; align-items:center; gap:10px; width:100%; min-height:38px; margin-bottom:8px; padding:8px 10px; border:0; border-radius:10px; color:var(--text-secondary); background:transparent; text-align:left; cursor:pointer; }
+    .project-menu:hover, .project-menu.active { color:var(--text-primary); background:rgba(var(--accent-primary-rgb),.11); }
+    .project-menu i { width:18px; color:var(--accent-primary); font-size:17px; }
+    .sidebar-projects .project-section-label { margin-bottom:10px; }
+    .sidebar-projects .project-group { border-bottom:0; }
+    .sidebar-projects .project-group-head small { display:none; }
+    .sidebar-projects .project-sessions { margin-left:20px; }
+    .sidebar-projects .project-session { min-height:34px; padding:7px 8px; }
     .file-loading { display:flex; align-items:center; gap:10px; color:var(--text-secondary); }
     .error-text { color:#ff9c9c; }
     .theme-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px; }
@@ -139,8 +168,9 @@
       <div class="brand"><div class="brand-mark">A</div><div><strong>Apktool Studio</strong><small>reverse engineering desk</small></div></div>
       <div class="nav-label">Workspace</div>
       <nav class="nav" aria-label="主导航">
-        <button class="active" data-page="workspace"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>工作台</button><button data-page="files"><i class="ti ti-folder-code" aria-hidden="true"></i>项目文件</button><button data-page="framework"><i class="ti ti-box" aria-hidden="true"></i>Framework</button><button data-page="settings"><i class="ti ti-adjustments" aria-hidden="true"></i>设置</button>
+        <button class="active" data-page="workspace"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>工作台</button><button data-page="files" style="display:none" aria-hidden="true">项目文件</button><button data-page="framework"><i class="ti ti-box" aria-hidden="true"></i>Framework</button><button data-page="settings"><i class="ti ti-adjustments" aria-hidden="true"></i>设置</button>
       </nav>
+      <div id="sidebar-projects" class="sidebar-projects"></div><input id="project-folder-input" type="file" webkitdirectory directory multiple hidden />
       <div class="sidebar-footer">Apktool 3.0.3<br><span style="color:var(--accent-secondary)">● 本地引擎已连接</span></div>
     </div></aside>
     <main class="main">
@@ -193,6 +223,7 @@
         clearInterval(backendPollTimer);
         clearInterval(backendWaitTimer);
         updateBackendStatus('online', 0);
+        loadSidebarTasks();
       } catch (error) {
         const seconds = Math.floor((Date.now() - backendWaitStartedAt) / 1000);
         updateBackendStatus('waiting', seconds);
@@ -211,6 +242,16 @@
     // 中文注释：选择文件后上传到 Java 后端，并自动启动真实解码任务。
     const dropzone = document.querySelector('.dropzone');
     const apkInput = document.getElementById('apk-file');
+    const projectFolderInput = document.getElementById('project-folder-input');
+    const importedProjectGroups = [];
+    // 中文注释：从本地选择文件夹，将每个相对路径根目录登记为独立项目会话。
+    projectFolderInput?.addEventListener('change', () => {
+      const files = Array.from(projectFolderInput.files || []); if (!files.length) return;
+      const groups = new Map();
+      files.forEach((file) => { const root = (file.webkitRelativePath || file.name).split('/')[0] || '本地文件夹'; if (!groups.has(root)) groups.set(root, []); groups.get(root).push(file.name); });
+      groups.forEach((entries, name) => { const existing = importedProjectGroups.find((group) => group.name === name); if (existing) existing.count = entries.length; else importedProjectGroups.push({ name, count: entries.length, importedAt: Date.now() }); });
+      renderSidebarProjects(); projectFolderInput.value = '';
+    });
     // 中文注释：统一处理文件选择和拖拽释放，确保两种入口调用相同的上传逻辑。
     async function handleApkFile(file) {
       if (!file) return;
@@ -301,6 +342,7 @@
         panel.innerHTML += '<div class="divider"></div><div id="file-browser"></div>';
         activeProjectTasks = taskData.tasks || [];
         renderTaskRoot();
+        if (pendingProjectTaskId) { const taskId = pendingProjectTaskId; pendingProjectTaskId = ''; openProjectTask(taskId); }
       } catch (error) {
         // 中文注释：后端尚未启动时展示等待计时，并自动重试项目文件请求。
         const seconds = Math.floor((Date.now() - backendWaitStartedAt) / 1000);
@@ -317,17 +359,55 @@
         }, 1000);
       }
     }
+    // 中文注释：后端上线后立即加载侧边栏项目，避免必须先点击“项目文件”页面。
+    async function loadSidebarTasks() {
+      try {
+        const response = await fetch('http://127.0.0.1:8787/api/tasks', { cache:'no-store' });
+        const data = await response.json();
+        activeProjectTasks = data.tasks || [];
+        renderSidebarProjects();
+      } catch (error) { /* 中文注释：侧边栏保持空状态，等待下一次健康检查重试。 */ }
+    }
     // 中文注释：保存当前任务、文件列表和目录，用于面包屑导航。
     let activeProjectTasks = [];
     let activeProjectTask = null;
     let activeProjectFiles = [];
     let activeProjectPath = '';
+    let pendingProjectTaskId = '';
+    renderSidebarProjects();
+    // 中文注释：优先使用后端时间字段显示相对时间，旧接口没有时间时回退到任务状态。
+    function formatTaskAge(task) {
+      const value = task.updatedAt || task.createdAt;
+      if (!value) return task.status || (task.running ? '处理中' : '待处理');
+      const diff = Math.max(0, Date.now() - new Date(value).getTime());
+      const minutes = Math.floor(diff / 60000);
+      if (minutes < 1) return '刚刚';
+      if (minutes < 60) return `${minutes}分钟前`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}小时前`;
+      return `${Math.floor(hours / 24)}天前`;
+    }
     // 中文注释：根目录展示 web-work 下的软件任务文件夹，点击后进入任务内容。
     function renderTaskRoot() {
       const browser = document.getElementById('file-browser'); if (!browser) return;
-      const folders = activeProjectTasks.map((task, index) => `<button class="file-folder" onclick="openProjectTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-folder"></i><span><strong>项目 ${String(index + 1).padStart(2, '0')}</strong><small>${escapeHtml(task.name || 'input.apk')} · ${escapeHtml(task.status || '待处理')} · 解码项目</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>`).join('');
-      browser.innerHTML = `<div class="file-breadcrumb"><button class="breadcrumb breadcrumb-current">web-work</button></div><div class="file-root-title"><span>软件文件夹</span><small>web-work / ${activeProjectTasks.length} 个项目</small></div>${folders || '<p class="file-empty">暂无已解码项目，请先在工作台上传 APK。</p>'}`;
+      const sessions = activeProjectTasks.map((task, index) => {
+        const selected = activeProjectTask && activeProjectTask.id === task.id ? ' active' : '';
+        const title = task.name || `项目 ${String(index + 1).padStart(2, '0')}`;
+        const meta = formatTaskAge(task);
+        return `<button class="project-session${selected}" onclick="openProjectTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><span class="project-session-title">${escapeHtml(title)}</span><span class="project-session-meta">${escapeHtml(meta)}</span></button>`;
+      }).join('');
+      browser.innerHTML = `<div class="file-breadcrumb"><button class="breadcrumb breadcrumb-current">web-work</button></div><div class="file-root-title"><span>软件文件夹</span><small>web-work / ${activeProjectTasks.length} 个项目</small></div>${activeProjectTasks.map((task, index) => `<button class="file-folder" onclick="openProjectTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-folder"></i><span><strong>项目 ${String(index + 1).padStart(2, '0')}</strong><small>${escapeHtml(task.name || 'input.apk')} · ${escapeHtml(task.status || '待处理')} · 解码项目</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>`).join('') || '<p class="file-empty">暂无已解码项目，请先在工作台上传 APK。</p>'}`;
+      renderSidebarProjects();
     }
+    // 中文注释：在全局侧边栏展示项目文件夹及其会话列表。
+    function renderSidebarProjects() {
+      const host = document.getElementById('sidebar-projects'); if (!host) return;
+      const sessions = activeProjectTasks.map((task) => `<button class="project-session${activeProjectTask && activeProjectTask.id === task.id ? ' active' : ''}" onclick="openSidebarTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><span class="project-session-title">${escapeHtml(task.name || '未命名项目')}</span><span class="project-session-meta">${escapeHtml(formatTaskAge(task))}</span></button>`).join('');
+      const imported = importedProjectGroups.map((group) => `<section class="project-group"><div class="project-group-head"><i class="ti ti-folder"></i><strong>${escapeHtml(group.name)}</strong></div><div class="project-sessions"><div class="project-session"><span class="project-session-title">${group.count} 个本地文件</span><span class="project-session-meta">刚刚</span></div></div></section>`).join('');
+      host.innerHTML = `<div class="project-import"><span class="project-import-label"><i class="ti ti-folder-code"></i><span>项目文件</span></span><button title="从本地导入文件夹" onclick="document.getElementById('project-folder-input').click()"><i class="ti ti-plus"></i></button></div><section class="project-group"><div class="project-group-head"><i class="ti ti-folder"></i><strong>web-work</strong></div><div class="project-sessions">${sessions || '<p class="project-empty">暂无项目</p>'}</div></section>${imported}`;
+    }
+    // 中文注释：点击侧边栏任务时先切换项目文件页，再打开对应目录。
+    function openSidebarTask(taskId) { pendingProjectTaskId = taskId; document.querySelector('.nav button[data-page="files"]')?.click(); }
     // 中文注释：进入指定 APK 的解码目录，而不是在根目录展开文件树。
     async function openProjectTask(taskId) {
       const task = activeProjectTasks.find((item) => item.id === taskId); if (!task) return;
