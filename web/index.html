@@ -120,6 +120,89 @@
     .file-preview-body { display:grid; grid-template-columns:minmax(0,1fr) 260px; height:calc(100% - 54px); min-height:300px; overflow:hidden; }
     .file-preview-code { height:100%; margin:0; padding:18px; white-space:pre-wrap; overflow:auto; color:#b8e8d5; font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace; scrollbar-width:none; }
     .file-preview-code::-webkit-scrollbar, .file-list-pane::-webkit-scrollbar, .file-preview-pane::-webkit-scrollbar { width:0; height:0; display:none; }
+    .dex-file-list { display:flex; flex-wrap:wrap; gap:2px; padding:8px 14px 0; border-bottom:1px solid var(--border-subtle); }
+    .dex-file-list button { padding:9px 12px 10px; border:0; border-bottom:2px solid transparent; border-radius:6px 6px 0 0; color:var(--text-tertiary); background:transparent; font-size:11px; }
+    .dex-file-list button:hover { color:var(--text-primary); background:rgba(255,255,255,.04); }
+    .dex-file-list button.active { color:var(--accent-primary); border-bottom-color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.08); }
+    /* 中文注释：DEX 工作台布局：顶部模式与导出操作，左侧类列表，右侧编辑/预览区。 */
+    .dex-workspace { display:grid; grid-template-rows:auto minmax(0,1fr); height:calc(100% - 54px); min-height:420px; }
+    .dex-workspace-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border-subtle); }
+    .dex-workspace-head .grow { flex:1; }
+    .dex-mode-tabs { display:flex; gap:4px; }
+    .dex-mode-tabs button { padding:6px 12px; border:0; border-radius:8px; color:var(--text-tertiary); background:transparent; font-size:11px; }
+    .dex-mode-tabs button.active { color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.12); }
+    .dex-body { display:grid; grid-template-columns:minmax(190px,270px) minmax(0,1fr); min-height:0; }
+    .dex-class-pane { display:flex; flex-direction:column; min-height:0; border-right:1px solid var(--border-subtle); }
+    .dex-class-search { margin:8px 10px; padding:7px 10px; border:1px solid var(--border-subtle); border-radius:8px; background:rgba(255,255,255,.03); color:var(--text-primary); font-size:12px; }
+    .dex-class-list { flex:1; overflow:auto; padding:0 6px 10px; scrollbar-width:none; }
+    .dex-class-list::-webkit-scrollbar { width:0; height:0; display:none; }
+    .dex-class-list button { display:block; width:100%; text-align:left; padding:7px 9px; margin:1px 0; border:0; border-radius:8px; background:transparent; color:var(--text-secondary); font-size:11.5px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dex-class-list button:hover { background:rgba(255,255,255,.05); color:var(--text-primary); }
+    .dex-class-list button.active { color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.1); }
+    /* 中文注释：MT 管理器风格的包名树：目录行可折叠，类行按层级缩进。 */
+    .dex-class-list button.dex-tree-dir { color:var(--accent-secondary); font-size:12px; }
+    .dex-class-list button.dex-tree-dir .dir-arrow { display:inline-block; width:12px; color:var(--text-tertiary); }
+    .dex-editor-pane { display:flex; flex-direction:column; min-height:0; min-width:0; }
+    .dex-status { display:none; padding:8px 14px; font-size:11.5px; border-bottom:1px solid var(--border-subtle); color:var(--text-tertiary); white-space:pre-wrap; word-break:break-all; }
+    .dex-status.busy { display:block; color:#6fb7e0; }
+    .dex-status.ok { display:block; color:#7bd88f; }
+    .dex-status.err { display:block; color:#e0533d; }
+    .smali-split { flex:1; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); min-height:0; }
+    .smali-editor { flex:1; resize:none; border:0; outline:none; padding:14px; background:rgba(255,255,255,.015); color:#b8e8d5; font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre; overflow:auto; scrollbar-width:none; }
+    .smali-editor::-webkit-scrollbar, .dex-java-view::-webkit-scrollbar { width:0; height:0; display:none; }
+    .dex-java-view { flex:1; min-height:0; border-left:1px solid var(--border-subtle); }
+    .dex-editor-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:9px 14px; border-bottom:1px solid var(--border-subtle); font-size:11px; color:var(--text-tertiary); }
+    /* 中文注释：逆向总览仪表盘：沿用玻璃卡片风格，信息密度优先、一键可复制。 */
+    .view-pills { display:inline-flex; border:1px solid var(--border-default); border-radius:10px; overflow:hidden; }
+    .view-pills button { padding:7px 16px; border:0; border-radius:0; background:transparent; color:var(--text-tertiary); font-size:12px; }
+    .view-pills button.active { color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.12); }
+    .ov-wrap { display:flex; flex-direction:column; gap:14px; padding:14px; min-height:0; overflow:auto; scrollbar-width:none; }
+    .ov-wrap::-webkit-scrollbar { width:0; height:0; display:none; }
+    .ov-hero { display:flex; align-items:center; gap:18px; padding:18px 20px; border:1px solid var(--border-default); border-radius:14px; background:rgba(8,28,25,.68); flex-wrap:wrap; }
+    .ov-avatar { width:58px; height:58px; border-radius:16px; display:grid; place-items:center; font-size:26px; font-weight:700; color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.14); border:1px solid var(--border-subtle); }
+    .ov-hero h3 { margin:0 0 4px; color:var(--text-primary); font-size:19px; }
+    .ov-pkg { color:var(--text-tertiary); font-size:12px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .ov-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .ov-badge { padding:3px 10px; border-radius:999px; font-size:11px; border:1px solid var(--border-subtle); color:var(--text-secondary); background:rgba(255,255,255,.03); }
+    .ov-badge.good { color:#7bd88f; border-color:rgba(123,216,143,.35); }
+    .ov-badge.warn { color:#e0a53d; border-color:rgba(224,165,61,.35); }
+    .ov-badge.bad { color:#e0533d; border-color:rgba(224,83,61,.35); }
+    .ov-quickstats { margin-left:auto; display:flex; gap:22px; text-align:right; flex-wrap:wrap; }
+    .ov-quickstats .qs b { display:block; color:var(--text-primary); font-size:20px; }
+    .ov-quickstats .qs span { color:var(--text-tertiary); font-size:11px; }
+    .ov-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
+    .ov-card { border:1px solid var(--border-default); border-radius:14px; background:rgba(8,28,25,.68); padding:14px 16px; min-width:0; }
+    .ov-card-title { display:flex; align-items:center; justify-content:space-between; margin:0 0 10px; color:var(--text-primary); font-size:13px; font-weight:600; }
+    .ov-card-title small { color:var(--text-tertiary); font-weight:400; }
+    .ov-copy { padding:4px 10px; font-size:11px; }
+    .ov-list { margin:0; padding:0; list-style:none; max-height:220px; overflow:auto; scrollbar-width:none; }
+    .ov-list::-webkit-scrollbar { width:0; height:0; display:none; }
+    .ov-list li { display:flex; gap:8px; align-items:center; padding:4px 0; color:var(--text-secondary); font-size:11.5px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ov-list li b { color:var(--text-primary); font-weight:500; }
+    .ov-bar-row { display:flex; align-items:center; gap:8px; margin:5px 0; font-size:11.5px; }
+    .ov-bar-row .bar { flex:1; height:6px; border-radius:4px; background:rgba(255,255,255,.06); overflow:hidden; }
+    .ov-bar-row .bar i { display:block; height:100%; border-radius:4px; background:var(--accent-primary); opacity:.75; }
+    .ov-bar-row em { width:52px; text-align:right; color:var(--text-tertiary); font-style:normal; }
+    .ov-kv { display:flex; justify-content:space-between; padding:4px 0; font-size:12px; color:var(--text-secondary); border-bottom:1px dashed var(--border-subtle); }
+    .ov-kv:last-child { border-bottom:0; }
+    .ov-kv b { color:var(--text-primary); font-weight:500; max-width:60%; text-align:right; word-break:break-all; }
+    /* 中文注释：字符串提取面板：分类 chips + 等宽结果列表，点击行即复制。 */
+    .str-bar { display:flex; flex-direction:column; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border-subtle); }
+    .str-bar .dex-class-search { margin:0; width:100%; }
+    .str-chips { display:flex; flex-wrap:wrap; gap:6px; }
+    .str-chips button { padding:4px 12px; border-radius:999px; border:1px solid var(--border-subtle); background:transparent; color:var(--text-tertiary); font-size:11px; }
+    .str-chips button.active { color:var(--accent-primary); border-color:rgba(var(--accent-primary-rgb),.5); background:rgba(var(--accent-primary-rgb),.1); }
+    .str-list { flex:1; overflow:auto; padding:6px 10px 12px; scrollbar-width:none; }
+    .str-list::-webkit-scrollbar { width:0; height:0; display:none; }
+    .str-row { display:flex; align-items:flex-start; gap:10px; padding:7px 8px; border-radius:8px; cursor:pointer; }
+    .str-row:hover { background:rgba(255,255,255,.045); }
+    .str-cat { flex:none; padding:1px 8px; border-radius:999px; font-size:10px; border:1px solid var(--border-subtle); color:var(--text-tertiary); margin-top:1px; }
+    .str-cat-url { color:#6fb7e0; border-color:rgba(111,183,224,.4); }
+    .str-cat-key { color:#e07a3d; border-color:rgba(224,122,61,.4); }
+    .str-cat-domain { color:#7bd88f; border-color:rgba(123,216,143,.4); }
+    .str-cat-text { color:#c9a0e0; border-color:rgba(201,160,224,.4); }
+    .str-val { min-width:0; word-break:break-all; color:var(--text-secondary); font:11.5px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .dex-editor-toolbar label { display:flex; align-items:center; gap:5px; }
     .file-preview-meta { padding:18px; border-left:1px solid var(--border-subtle); color:var(--text-tertiary); font-size:12px; }
     .file-content-split { display:grid; grid-template-columns:minmax(220px,1fr) minmax(0,3fr); gap:18px; align-items:stretch; height:730px; }
     .file-list-pane, .file-preview-pane { min-width:0; border:1px solid var(--border-default); border-radius:14px; background:rgba(8,28,25,.68); overflow:hidden; }
@@ -536,12 +619,311 @@
       const crumbs = ['web-work', activeProjectTask?.displayName || '软件文件夹'].concat(currentPath ? currentPath.split('/') : []);
       const crumbHtml = crumbs.map((part, index) => { const path = index < 2 ? '' : crumbs.slice(2, index + 1).join('/'); const action = index === 0 ? 'renderTaskRoot()' : `openProjectDirectory(decodeURIComponent('${encodeURIComponent(path)}'))`; return `<button class="breadcrumb ${index === crumbs.length - 1 ? 'breadcrumb-current' : ''}" onclick="${action}">${escapeHtml(part)}</button>${index < crumbs.length - 1 ? '<span>/</span>' : ''}`; }).join('');
       const rows = Array.from(children.entries()).sort((a,b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0])).map(([name, directory]) => { if (directory) return `<button class="file-folder" onclick="openProjectDirectory(decodeURIComponent('${encodeURIComponent(prefix + name)}'))"><i class="ti ti-folder"></i><span><strong>${escapeHtml(name)}</strong><small>文件夹</small></span><i class="ti ti-chevron-right folder-arrow"></i></button>`; const info = fileTypeInfo(name); return `<button class="file-row" onclick="previewProjectFile(decodeURIComponent('${encodeURIComponent(prefix + name)}'))"><span><i class="${info[0]}"></i>${escapeHtml(name)}</span><small>${info[1]}</small></button>`; }).join('');
-      browser.innerHTML = `<div class="file-breadcrumb">${crumbHtml}</div><div class="file-root-title"><span>${escapeHtml(currentPath || activeProjectTask?.displayName || '项目文件')}</span><span class="file-actions"><small>${children.size} 个项目</small><button class="secondary" onclick="buildCurrentTask(event)">构建 APK</button></span></div><div class="file-content-split"><section class="file-list-pane"><input class="file-search" type="search" placeholder="搜索当前目录文件…" oninput="filterProjectFiles(this.value)">${rows || '<p class="file-empty">当前目录为空。</p>'}</section><section id="file-preview" class="file-preview-pane"><div class="file-preview-card"><div class="file-preview-head"><strong>选择文件开始预览</strong></div><div class="file-preview-meta">点击左侧文件，内容将在此处实时显示。</div></div></section></div>`;
+      // 中文注释：项目页顶部提供 总览/文件 切换（总览 = 逆向信息仪表盘）。
+      projectView = 'files';
+      browser.innerHTML = `<div class="file-breadcrumb">${crumbHtml}</div><div class="file-root-title"><span>${escapeHtml(currentPath || activeProjectTask?.displayName || '项目文件')}</span><span class="file-actions"><span class="view-pills"><button class="active" onclick="showProjectView('overview')">总览</button><button onclick="showProjectView('files')">文件</button></span><small>${children.size} 个项目</small><button class="secondary" onclick="buildCurrentTask(event)">构建 APK</button></span></div><div class="file-content-split"><section class="file-list-pane"><input class="file-search" type="search" placeholder="搜索当前目录文件…" oninput="filterProjectFiles(this.value)">${rows || '<p class="file-empty">当前目录为空。</p>'}</section><section id="file-preview" class="file-preview-pane"><div class="file-preview-card"><div class="file-preview-head"><strong>选择文件开始预览</strong></div><div class="file-preview-meta">点击左侧文件，内容将在此处实时显示。</div></div></section></div>`;
     }
-    // 中文注释：在当前项目文件卡片内实时加载并展示文本文件内容。
-    async function previewProjectFile(path) { const host = document.getElementById('file-preview'); if (!host || !activeProjectTask) return; host.innerHTML = '<div class="file-preview-card"><div class="file-preview-head"><strong>正在读取文件…</strong></div></div>'; try { const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/content?path=${encodeURIComponent(path)}`, { cache:'no-store' }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '读取失败'); const body = data.mime ? `<div style="display:grid;place-items:center;min-height:360px;padding:24px"><img src="data:${data.mime};base64,${data.data}" alt="${escapeHtml(data.path)}" style="max-width:100%;max-height:520px;object-fit:contain;border-radius:10px"></div>` : `<pre class="file-preview-code">${escapeHtml(data.content || '该文件没有可显示的文本内容。')}</pre>`; host.innerHTML = `<section class="file-preview-card"><div class="file-preview-head"><strong>${escapeHtml(data.path)}</strong><span class="badge">${data.mime ? '图片预览' : '文件预览'}</span></div><div class="file-preview-body">${body}<aside class="file-preview-meta">点击左侧其他文件可实时切换预览。</aside></div></section>`; } catch (error) { host.innerHTML = `<div class="file-preview-card"><div class="file-preview-head"><strong>无法预览</strong></div><div class="file-preview-meta">${escapeHtml(error.message)}</div></div>`; } }
+    // 中文注释：在当前项目文件卡片内实时加载并展示文本文件内容；classes*.dex 进入 DEX 工作台。
+    async function previewProjectFile(path) { const host = document.getElementById('file-preview'); if (!host || !activeProjectTask) return; if (/(^|\/)classes(?:\d+)?\.dex$/i.test(path)) { openDexWorkspace(path); return; } host.innerHTML = '<div class="file-preview-card"><div class="file-preview-head"><strong>正在读取文件…</strong></div></div>'; try { const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/content?path=${encodeURIComponent(path)}`, { cache:'no-store' }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '读取失败'); const body = data.mime ? `<div style="display:grid;place-items:center;min-height:360px;padding:24px"><img src="data:${data.mime};base64,${data.data}" alt="${escapeHtml(data.path)}" style="max-width:100%;max-height:520px;object-fit:contain;border-radius:10px"></div>` : `<pre class="file-preview-code">${escapeHtml(data.content || '该文件没有可显示的文本内容。')}</pre>`; host.innerHTML = `<section class="file-preview-card"><div class="file-preview-head"><strong>${escapeHtml(data.path)}</strong><span class="badge">${data.mime ? '图片预览' : '文件预览'}</span></div><div class="file-preview-body">${body}<aside class="file-preview-meta">点击左侧其他文件可实时切换预览。</aside></div></section>`; } catch (error) { host.innerHTML = `<div class="file-preview-card"><div class="file-preview-head"><strong>无法预览</strong></div><div class="file-preview-meta">${escapeHtml(error.message)}</div></div>`; } }
+    // 中文注释：DEX 工作台状态：MT 管理器习惯——点类直接进 Smali 编辑，Java 为切换查看的辅助视图。
+    let dexWorkspace = { dexPath:null, cls:null, mode:'smali', live:false, liveTimer:null, classes:[], keyword:'', dirty:false, patched:new Set(), tree:null, expanded:new Set() };
+    // 中文注释：Smali 编辑草稿按 "dex路径|类名" 缓存，切换模式或类时不丢未应用的修改。
+    let dexDrafts = {};
+    function dexDraftKey() { return dexWorkspace.dexPath + '|' + dexWorkspace.cls; }
+    // 中文注释：打开 DEX 工作台：类列表 + Java/Smali 双模式 + 补丁应用与导出。
+    function openDexWorkspace(dexPath) {
+      const host = document.getElementById('file-preview');
+      if (!host || !activeProjectTask) return;
+      const keepLive = dexWorkspace.live;
+      const keepPatched = dexWorkspace.patched;
+      // 中文注释：根目录与 original-dex 可能存在同名 dex（-s 兼容模式的副本），按文件名去重并优先 original-dex 路径。
+      const byName = new Map();
+      activeProjectFiles.filter((file) => /(^|\/)classes(?:\d+)?\.dex$/i.test(file)).forEach((file) => {
+        const name = file.split('/').pop().toLowerCase();
+        const existing = byName.get(name);
+        if (!existing || (file.toLowerCase().includes('original-dex') && !existing.toLowerCase().includes('original-dex'))) byName.set(name, file);
+      });
+      dexPath = byName.get(dexPath.split('/').pop().toLowerCase()) || dexPath;
+      dexWorkspace = { dexPath, cls:null, mode:'smali', live:keepLive, liveTimer:null, classes:[], keyword:'', dirty:false, patched:keepPatched, tree:null, expanded:new Set() };
+      // 中文注释：恢复编辑草稿（浏览器本地）与已打补丁标记（服务端落盘），刷新或重启后不丢。
+      try { dexDrafts = JSON.parse(localStorage.getItem('apktool-drafts-' + activeProjectTask.id) || '{}'); } catch (e) { dexDrafts = {}; }
+      fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/dex/patched`).then((r) => r.json()).then((pd) => { (pd.types || []).forEach((t) => dexWorkspace.patched.add(t)); renderDexClassList(); }).catch(() => {});
+      const dexFiles = Array.from(byName.values());
+      const dexNav = dexFiles.length > 1 ? `<nav class="dex-file-list">${dexFiles.map((file) => `<button class="${file === dexPath ? 'active' : ''}" onclick="previewProjectFile(decodeURIComponent('${encodeURIComponent(file)}'))">${escapeHtml(file.split('/').pop())}</button>`).join('')}</nav>` : '';
+      host.innerHTML = `<section class="file-preview-card"><div class="file-preview-head"><strong>${escapeHtml(dexPath)}</strong><span class="badge">DEX 工作台</span></div>${dexNav}<div class="dex-workspace"><div class="dex-workspace-head"><div class="dex-mode-tabs"><button id="dex-mode-smali" class="active" onclick="setDexMode('smali')">Smali 编辑</button><button id="dex-mode-java" onclick="setDexMode('java')">Java 查看</button><button id="dex-mode-strings" onclick="setDexMode('strings')">字符串</button></div><span class="grow"></span><button class="secondary" onclick="exportPatched('dex')">导出补丁 DEX</button><button class="secondary" onclick="exportPatched('apk')">导出补丁 APK</button></div><div class="dex-body"><div class="dex-class-pane"><input class="dex-class-search" type="search" placeholder="搜索类名…" oninput="filterDexClasses(this.value)"><div class="dex-class-list" id="dex-class-list"><p class="file-empty" style="margin:10px 12px">正在加载类列表…</p></div></div><div class="dex-editor-pane"><div class="dex-status" id="dex-status"></div><div id="dex-content" style="display:flex;flex-direction:column;flex:1;min-height:0"><p class="file-empty" style="padding:18px">请选择左侧类开始编辑。</p></div></div></div></div></section>`;
+      loadDexClasses(dexPath);
+    }
+    // 中文注释：加载当前 dex 的全部类名（smali 描述符形式）；假 dex 占位文件显示友好提示。
+    async function loadDexClasses(dexPath) {
+      const listHost = document.getElementById('dex-class-list');
+      if (!listHost) return;
+      try {
+        const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/dex/classes?path=${encodeURIComponent(dexPath)}`, { cache:'no-store' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '加载类列表失败');
+        if (data.note) { listHost.innerHTML = `<p class="file-empty" style="margin:10px 12px;line-height:1.7">${escapeHtml(data.note)}</p>`; return; }
+        dexWorkspace.classes = data.classes || [];
+        // 中文注释：构建 MT 管理器风格的包名树，默认全部折叠，点击目录逐层展开。
+        dexWorkspace.tree = buildClassTree(dexWorkspace.classes);
+        renderDexClassList();
+      } catch (error) {
+        listHost.innerHTML = `<p class="file-empty" style="margin:10px 12px">${escapeHtml(error.message)}</p>`;
+      }
+    }
+    function classDisplayName(cls) { return cls.replace(/^L/, '').replace(/;$/, '').replace(/\//g, '.'); }
+    function patchMark(cls) { return dexWorkspace.patched.has(cls) ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#e07a3d;margin-right:6px;vertical-align:middle"></span>' : ''; }
+    // 中文注释：把类名列表组织成包层级树（MT 管理器风格），目录可逐层展开。
+    function buildClassTree(classes) {
+      const root = { dirs: new Map(), classes: [] };
+      for (const cls of classes) {
+        const path = cls.replace(/^L/, '').replace(/;$/, '');
+        const parts = path.split('/');
+        let node = root;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!node.dirs.has(parts[i])) node.dirs.set(parts[i], { dirs: new Map(), classes: [] });
+          node = node.dirs.get(parts[i]);
+        }
+        node.classes.push({ cls, simple: parts[parts.length - 1] });
+      }
+      return root;
+    }
+    function toggleDexDir(encodedPkg) {
+      const pkg = decodeURIComponent(encodedPkg);
+      if (dexWorkspace.expanded.has(pkg)) dexWorkspace.expanded.delete(pkg);
+      else dexWorkspace.expanded.add(pkg);
+      renderDexClassList();
+    }
+    function renderDexClassList() {
+      const listHost = document.getElementById('dex-class-list');
+      if (!listHost) return;
+      const keyword = dexWorkspace.keyword.toLowerCase();
+      // 中文注释：搜索时按 MT 习惯退化为平铺匹配列表，同时匹配点分显示名与原始描述符。
+      if (keyword) {
+        const rows = dexWorkspace.classes.filter((cls) => { const display = cls.replace(/^L/i, '').replace(/;$/, '').replace(/\//g, '.').toLowerCase(); return display.includes(keyword) || cls.toLowerCase().includes(keyword); }).map((cls) => `<button class="${cls === dexWorkspace.cls ? 'active' : ''}" onclick="loadDexClass(decodeURIComponent('${encodeURIComponent(cls)}'))" title="${escapeHtml(classDisplayName(cls))}">${patchMark(cls)}${escapeHtml(classDisplayName(cls))}</button>`).join('');
+        listHost.innerHTML = rows || '<p class="file-empty" style="margin:10px 12px">没有匹配的类。</p>';
+        return;
+      }
+      if (!dexWorkspace.tree) return;
+      const rows = [];
+      const renderNode = (node, prefix, depth) => {
+        for (const dir of Array.from(node.dirs.keys()).sort()) {
+          const pkgPath = prefix ? prefix + '/' + dir : dir;
+          const expanded = dexWorkspace.expanded.has(pkgPath);
+          rows.push(`<button class="dex-tree-dir" style="padding-left:${9 + depth * 14}px" onclick="toggleDexDir(decodeURIComponent('${encodeURIComponent(pkgPath)}'))"><span class="dir-arrow">${expanded ? '▾' : '▸'}</span>${escapeHtml(dir)}</button>`);
+          if (expanded) renderNode(node.dirs.get(dir), pkgPath, depth + 1);
+        }
+        for (const item of Array.from(node.classes).sort((a, b) => a.simple.localeCompare(b.simple))) {
+          rows.push(`<button class="${item.cls === dexWorkspace.cls ? 'active' : ''}" style="padding-left:${9 + depth * 14}px" onclick="loadDexClass(decodeURIComponent('${encodeURIComponent(item.cls)}'))" title="${escapeHtml(classDisplayName(item.cls))}">${patchMark(item.cls)}${escapeHtml(item.simple)}</button>`);
+        }
+      };
+      renderNode(dexWorkspace.tree, '', 0);
+      listHost.innerHTML = rows.join('') || '<p class="file-empty" style="margin:10px 12px">没有类。</p>';
+    }
+    function filterDexClasses(keyword) { dexWorkspace.keyword = String(keyword || '').trim(); renderDexClassList(); }
+    function setDexMode(mode) {
+      dexWorkspace.mode = mode;
+      ['dex-mode-smali', 'dex-mode-java', 'dex-mode-strings'].forEach((id) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.toggle('active', id === 'dex-mode-' + mode);
+      });
+      if (mode === 'strings') { renderStringsPanel(); return; }
+      if (dexWorkspace.cls) loadDexClass(dexWorkspace.cls);
+      else {
+        const host = document.getElementById('dex-content');
+        if (host) host.innerHTML = '<p class="file-empty" style="padding:18px">请选择左侧类开始编辑。</p>';
+      }
+    }
+    // 中文注释：字符串提取面板——枚举 dex 字符串池并按 URL/密钥/域名/文案分类，逆向取信息的第一入口。
+    const STR_CAT_NAMES = { all: '全部', url: 'URL', key: '密钥', domain: '域名', text: '文案', other: '其他' };
+    let strSeq = 0;
+    function renderStringsPanel() {
+      const host = document.getElementById('dex-content');
+      if (!host || !dexWorkspace.dexPath) return;
+      host.innerHTML = `<div class="str-bar"><input class="dex-class-search" id="str-q" type="search" placeholder="搜索字符串（支持 URL / 密钥 / 域名 / 文案 关键字）…" oninput="onStringsInput()"><div class="str-chips" id="str-chips"></div></div><div class="str-list" id="str-list"><p class="file-empty" style="padding:14px">正在枚举字符串池…</p></div>`;
+      fetchStrings();
+    }
+    function onStringsInput() {
+      if (dexWorkspace.strTimer) clearTimeout(dexWorkspace.strTimer);
+      dexWorkspace.strTimer = setTimeout(() => fetchStrings(), 350);
+    }
+    function setStrCat(cat) { dexWorkspace.strCat = cat; fetchStrings(); }
+    async function fetchStrings() {
+      const listHost = document.getElementById('str-list');
+      if (!listHost || !dexWorkspace.dexPath || !activeProjectTask) return;
+      const seq = ++strSeq;
+      const q = document.getElementById('str-q')?.value || '';
+      const cat = dexWorkspace.strCat || 'all';
+      try {
+        const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/dex/strings?path=${encodeURIComponent(dexWorkspace.dexPath)}&cat=${encodeURIComponent(cat)}&q=${encodeURIComponent(q)}`, { cache:'no-store' });
+        const data = await response.json();
+        if (seq !== strSeq) return;
+        if (!response.ok) throw new Error(data.error || '加载失败');
+        if (data.note) { listHost.innerHTML = `<p class="file-empty" style="padding:14px;line-height:1.7">${escapeHtml(data.note)}</p>`; document.getElementById('str-chips').innerHTML = ''; return; }
+        const counts = data.counts || {};
+        document.getElementById('str-chips').innerHTML = Object.keys(STR_CAT_NAMES).map((key) => `<button class="${(dexWorkspace.strCat || 'all') === key ? 'active' : ''}" onclick="setStrCat('${key}')">${STR_CAT_NAMES[key]} ${counts[key] != null ? counts[key].toLocaleString() : ''}</button>`).join('');
+        const rows = (data.results || []).map((item) => `<div class="str-row" title="点击复制" onclick="copyText(decodeURIComponent('${encodeURIComponent(item.v)}'))"><span class="str-cat str-cat-${item.c}">${STR_CAT_NAMES[item.c] || item.c}</span><span class="str-val">${escapeHtml(item.v.length > 300 ? item.v.slice(0, 300) + ' …' : item.v)}</span></div>`).join('');
+        listHost.innerHTML = rows || '<p class="file-empty" style="padding:14px">没有匹配的字符串。</p>';
+        if (data.truncated) listHost.insertAdjacentHTML('beforeend', '<p class="file-empty" style="padding:2px 14px 10px">结果较多，仅显示前 400 条，可输入关键字缩小范围。</p>');
+      } catch (error) {
+        listHost.innerHTML = `<p class="file-empty" style="padding:14px">${escapeHtml(error.message)}</p>`;
+      }
+    }
+    // 中文注释：加载类的 Java 反编译或 Smali 反汇编；Smali 模式为左编辑右预览的分栏。
+    // 中文注释：请求序号守卫——模式快速切换时丢弃迟到的旧响应，避免旧内容覆盖新界面。
+    let dexLoadSeq = 0;
+    async function loadDexClass(cls) {
+      const contentHost = document.getElementById('dex-content');
+      if (!contentHost || !dexWorkspace.dexPath) return;
+      const seq = ++dexLoadSeq;
+      dexWorkspace.cls = cls;
+      renderDexClassList();
+      setDexStatus('', '');
+      contentHost.innerHTML = '<p class="file-empty" style="padding:18px">正在反编译，请稍候…</p>';
+      try {
+        const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/dex/code?path=${encodeURIComponent(dexWorkspace.dexPath)}&cls=${encodeURIComponent(cls)}&mode=${dexWorkspace.mode}`, { cache:'no-store' });
+        const data = await response.json();
+        if (seq !== dexLoadSeq) return;
+        if (!response.ok) throw new Error(data.error || '反编译失败');
+        if (dexWorkspace.mode === 'smali') {
+          // 中文注释：MT 习惯——编辑器是主界面，保存动作放在编辑器顶部工具栏。
+          contentHost.innerHTML = `<div class="dex-editor-toolbar"><button onclick="applyDexPatch()">保存并编译 (Ctrl+S)</button><label><input type="checkbox" ${dexWorkspace.live ? 'checked' : ''} onchange="dexWorkspace.live = this.checked">实时预览</label><small>保存后自动汇编 Smali 并更新右侧 Java 预览</small></div><div class="smali-split"><textarea id="smali-editor" class="smali-editor" spellcheck="false" oninput="onSmaliInput()" onkeydown="return dexEditorKeydown(event)"></textarea><pre class="file-preview-code dex-java-view" id="smali-java-preview">Java 预览将在保存编译后实时更新。</pre></div>`;
+          const editor = document.getElementById('smali-editor');
+          const draft = dexDrafts[dexDraftKey()];
+          editor.value = draft !== undefined ? draft : (data.content || '');
+        } else {
+          contentHost.innerHTML = `<pre class="file-preview-code dex-java-view" style="border-left:0">${escapeHtml(data.content || '该类没有可显示的代码。')}</pre>`;
+        }
+      } catch (error) {
+        contentHost.innerHTML = `<p class="file-empty" style="padding:18px">${escapeHtml(error.message)}</p>`;
+      }
+    }
+    function setDexStatus(kind, text) { const host = document.getElementById('dex-status'); if (!host) return; host.className = 'dex-status' + (kind ? ' ' + kind : ''); host.textContent = text; }
+    // 中文注释：输入时保存草稿并标记脏状态；实时预览开启时，停顿 900ms 自动应用补丁。
+    function onSmaliInput() {
+      const editor = document.getElementById('smali-editor');
+      if (editor) {
+        dexDrafts[dexDraftKey()] = editor.value;
+        dexWorkspace.dirty = true;
+        try { localStorage.setItem('apktool-drafts-' + activeProjectTask.id, JSON.stringify(dexDrafts)); } catch (e) {}
+      }
+      if (!dexWorkspace.live || !dexWorkspace.dirty || !dexWorkspace.cls) return;
+      if (dexWorkspace.liveTimer) clearTimeout(dexWorkspace.liveTimer);
+      dexWorkspace.liveTimer = setTimeout(() => { dexWorkspace.liveTimer = null; applyDexPatch(); }, 900);
+    }
+    function dexEditorKeydown(event) { if ((event.ctrlKey || event.metaKey) && (event.key === 's' || event.key === 'S')) { event.preventDefault(); applyDexPatch(); return false; } return true; }
+    // 中文注释：把编辑器中的 Smali 提交给后端汇编并替换内存中的类，成功后刷新右侧 Java 预览。
+    async function applyDexPatch() {
+      const editor = document.getElementById('smali-editor');
+      if (!editor || !dexWorkspace.cls || !activeProjectTask) return;
+      setDexStatus('busy', '⟳ 正在汇编 Smali 并应用补丁…');
+      try {
+        const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/dex/patch?path=${encodeURIComponent(dexWorkspace.dexPath)}&cls=${encodeURIComponent(dexWorkspace.cls)}`, { method:'POST', headers:{ 'Content-Type':'text/plain; charset=utf-8' }, body: editor.value });
+        const data = await response.json();
+        if (!response.ok) {
+          setDexStatus('err', `⚠ 补丁失败：\n${data.error || '未知错误'}`);
+          jumpToErrorLine(editor, data.errorLines || []);
+          return;
+        }
+        const preview = document.getElementById('smali-java-preview');
+        if (preview) preview.textContent = data.java || '该类暂无可显示的 Java 代码。';
+        (data.types || []).forEach((type) => dexWorkspace.patched.add(type));
+        dexWorkspace.dirty = false;
+        renderDexClassList();
+        setDexStatus('ok', `✓ 补丁已应用（${data.patched} 个类，${data.timeMs ?? 0} ms）${data.warn ? '\n' + data.warn : ''}`);
+      } catch (error) {
+        setDexStatus('err', `⚠ 补丁失败：${error.message}`);
+      }
+    }
+    // 中文注释：把光标定位到第一个汇编错误行（后端返回 0 基行号）。
+    function jumpToErrorLine(editor, lines) {
+      if (!editor || !lines.length) return;
+      const value = editor.value;
+      const lineStarts = [0];
+      for (let i = 0; i < value.length; i++) { if (value[i] === '\n') lineStarts.push(i + 1); }
+      const line = lines.find((n) => n >= 0 && n < lineStarts.length);
+      if (line === undefined) return;
+      const start = lineStarts[line];
+      let end = value.indexOf('\n', start);
+      if (end === -1) end = value.length;
+      editor.focus();
+      editor.setSelectionRange(start, end);
+    }
+    // 中文注释：导出补丁 DEX（按原始文件名重建）或重打包 APK（未签名）。
+    async function exportPatched(format) {
+      if (!activeProjectTask) return;
+      setDexStatus('busy', format === 'apk' ? '⟳ 正在重打包 APK…' : '⟳ 正在导出补丁 DEX…');
+      try {
+        const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/dex/export?format=${encodeURIComponent(format)}${format === 'apk' ? '&sign=1' : ''}`, { method:'POST' });
+        const data = await response.json();
+        if (!response.ok) { setDexStatus('err', `⚠ 导出失败：${data.error || '未知错误'}`); return; }
+        setDexStatus('ok', `✓ ${data.note}\n${(data.files || []).join('\n')}`);
+      } catch (error) {
+        setDexStatus('err', `⚠ 导出失败：${error.message}`);
+      }
+    }
     // 中文注释：按文件名即时过滤当前目录内容，不重新请求后端数据。
     function filterProjectFiles(keyword) { const value = String(keyword || '').trim().toLowerCase(); document.querySelectorAll('#file-browser .file-folder, #file-browser .file-row').forEach((row) => { row.style.display = !value || row.textContent.toLowerCase().includes(value) ? '' : 'none'; }); }
+    // 中文注释：按文件名即时过滤当前目录内容，不重新请求后端数据。
+    function filterProjectFiles(keyword) { const value = String(keyword || '').trim().toLowerCase(); document.querySelectorAll('#file-browser .file-folder, #file-browser .file-row').forEach((row) => { row.style.display = !value || row.textContent.toLowerCase().includes(value) ? '' : 'none'; }); }
+    // 中文注释：项目页 总览/文件 视图切换；总览聚合应用画像供逆向取信息。
+    let projectView = 'files';
+    let ovData = null;
+    async function showProjectView(view) {
+      projectView = view;
+      if (view === 'overview') { await renderOverview(); }
+      else { renderDirectoryBrowser(activeProjectFiles, activeProjectPath || ''); }
+    }
+    async function renderOverview() {
+      const browser = document.getElementById('file-browser');
+      if (!browser || !activeProjectTask) return;
+      browser.innerHTML = '<div class="file-root-title"><span>逆向总览</span></div><div class="ov-wrap"><p class="file-empty" style="margin:14px">正在聚合应用信息…</p></div>';
+      try {
+        const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/overview`, { cache:'no-store' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '聚合失败');
+        ovData = data;
+        browser.innerHTML = renderOverviewHtml(data);
+      } catch (error) {
+        browser.innerHTML = `<div class="file-root-title"><span>逆向总览</span></div><div class="ov-wrap"><p class="file-empty" style="margin:14px">${escapeHtml(error.message)}</p></div>`;
+      }
+    }
+    function copyText(text) { navigator.clipboard.writeText(String(text ?? '')).then(() => showToast('已复制到剪贴板'), () => showToast('复制失败')); }
+    function fmtSize(n) { n = Number(n) || 0; return n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : n > 1024 ? (n / 1024).toFixed(1) + ' KB' : n + ' B'; }
+    function copyOverview(what) {
+      if (!ovData) return;
+      let text = '';
+      if (what === 'permissions') text = ((ovData.manifest || {}).permissions || []).join('\n');
+      else if (what === 'exported') text = ((ovData.manifest || {}).exported || []).join('\n');
+      else if (what === 'sdk') text = (ovData.sdk || []).map((s) => s.prefix + '\t' + (s.name || '') + '\t' + s.classes).join('\n');
+      copyText(text);
+    }
+    function renderOverviewHtml(d) {
+      const b = d.basic || {}, m = d.manifest || {}, libs = d.libs || {}, sign = d.sign || {};
+      const comp = m.components || {};
+      const perms = m.permissions || [];
+      const sdkList = d.sdk || [];
+      const dexList = d.dex || [];
+      const totalClasses = dexList.reduce((sum, x) => sum + (x.classes || 0), 0);
+      const appName = b.appName || b.package || '未知应用';
+      const packerBadge = libs.packer ? `<span class="ov-badge bad">⚠ ${escapeHtml(libs.packer)}</span>` : `<span class="ov-badge good">无加固特征</span>`;
+      const badges = [packerBadge, `<span class="ov-badge">SDK ${b.minSdk ?? '?'} → ${b.targetSdk ?? '?'}</span>`, sign.v1 ? '<span class="ov-badge good">已 v1 签名</span>' : '<span class="ov-badge warn">未签名</span>', (m.flags || {}).debuggable ? '<span class="ov-badge warn">debuggable</span>' : ''].join('');
+      const hero = `<div class="ov-hero"><div class="ov-avatar">${escapeHtml((appName[0] || 'A').toUpperCase())}</div><div><h3>${escapeHtml(appName)}</h3><div class="ov-pkg">${escapeHtml(b.package || '')} · ${escapeHtml(b.versionName || '')} (${escapeHtml(b.versionCode || '-')})</div><div class="ov-badges">${badges}</div></div><div class="ov-quickstats"><div class="qs"><b>${fmtSize(sign.apkSize)}</b><span>APK 体积</span></div><div class="qs"><b>${totalClasses.toLocaleString()}</b><span>类总数</span></div><div class="qs"><b>${perms.length}</b><span>权限</span></div><div class="qs"><b>${(comp.activity || 0) + (comp.service || 0) + (comp.receiver || 0) + (comp.provider || 0)}</b><span>组件</span></div></div></div>`;
+      const permCard = `<div class="ov-card"><div class="ov-card-title">权限清单 <small>${perms.length} 项</small><button class="secondary ov-copy" onclick="copyOverview('permissions')">复制</button></div><ul class="ov-list">${perms.map((p) => `<li title="${escapeHtml(p)}">${escapeHtml(p)}</li>`).join('') || '<li>无</li>'}</ul></div>`;
+      const compCard = `<div class="ov-card"><div class="ov-card-title">四大组件</div><div class="ov-kv"><span>activity</span><b>${comp.activity || 0}</b></div><div class="ov-kv"><span>service</span><b>${comp.service || 0}</b></div><div class="ov-kv"><span>receiver</span><b>${comp.receiver || 0}</b></div><div class="ov-kv"><span>provider</span><b>${comp.provider || 0}</b></div><div class="ov-card-title" style="margin-top:12px">exported 组件 <small>${(m.exported || []).length}</small><button class="secondary ov-copy" onclick="copyOverview('exported')">复制</button></div><ul class="ov-list">${(m.exported || []).map((x) => `<li>${escapeHtml(x)}</li>`).join('') || '<li>无</li>'}</ul></div>`;
+      const maxSdk = Math.max(1, ...sdkList.map((s) => s.classes || 0));
+      const sdkCard = `<div class="ov-card"><div class="ov-card-title">第三方 SDK / 包分布 <small>按类数量</small><button class="secondary ov-copy" onclick="copyOverview('sdk')">复制</button></div>${sdkList.map((s) => `<div class="ov-bar-row"><b style="flex:none;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(s.prefix)}${s.name ? ' · ' + escapeHtml(s.name) : ''}">${escapeHtml(s.name || s.prefix)}</b><span class="bar"><i style="width:${Math.round((s.classes || 0) / maxSdk * 100)}%"></i></span><em>${s.classes}</em></div>`).join('') || '<p class="file-empty">无数据</p>'}</div>`;
+      const libCard = `<div class="ov-card"><div class="ov-card-title">Native 库 <small>${(libs.abis || []).join(', ') || '无 so'}</small></div>${libs.packer ? `<div class="ov-kv"><span>加固识别</span><b style="color:#e0533d">${escapeHtml(libs.packer)}</b></div>` : ''}<ul class="ov-list">${(libs.sos || []).slice(0, 20).map((s) => `<li><b>${escapeHtml(s.name)}</b><span style="margin-left:auto;color:var(--text-tertiary)">${fmtSize(s.size)}</span></li>`).join('') || '<li>无 so 库</li>'}</ul></div>`;
+      const dexCard = `<div class="ov-card"><div class="ov-card-title">DEX 构成</div>${dexList.map((x) => `<div class="ov-kv"><span>${escapeHtml(x.name)}${x.valid === false ? ' <span style="color:#e0a53d">⚠ 占位</span>' : ''}</span><b>${(x.classes || 0).toLocaleString()} 类 · ${fmtSize(x.size)}</b></div>`).join('') || '<p class="file-empty">无数据</p>'}</div>`;
+      const entryCard = `<div class="ov-card"><div class="ov-card-title">入口与安全标志</div><div class="ov-kv"><span>入口 Activity</span><b>${escapeHtml(b.entryActivity || '未识别')}</b></div><div class="ov-kv"><span>Deep Link scheme</span><b>${escapeHtml((m.schemes || []).join(', ') || '无')}</b></div><div class="ov-kv"><span>debuggable</span><b>${(m.flags || {}).debuggable ? '是 ⚠' : '否'}</b></div><div class="ov-kv"><span>allowBackup</span><b>${(m.flags || {}).allowBackup ? '是' : '否'}</b></div><div class="ov-kv"><span>networkSecurityConfig</span><b>${(m.flags || {}).networkSecurityConfig ? '有' : '无'}</b></div></div>`;
+      const signCard = `<div class="ov-card"><div class="ov-card-title">签名 <small>v1 / META-INF</small></div><div class="ov-kv"><span>证书痕迹</span><b>${sign.v1 ? '存在' : '未发现'}</b></div>${(sign.signFiles || []).map((f) => `<div class="ov-kv"><span style="word-break:break-all">${escapeHtml(f)}</span><b></b></div>`).join('')}</div>`;
+      const header = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="color:var(--text-tertiary);font-size:11px;letter-spacing:.14em">REVERSE OVERVIEW</span><span style="display:flex;gap:8px"><button class="secondary ov-copy" onclick="downloadReport('md')">导出 Markdown 报告</button><button class="secondary ov-copy" onclick="downloadReport('json')">JSON</button></span></div>`;
+      return `<div class="ov-wrap">${header}${hero}<div class="ov-grid">${permCard}${compCard}${sdkCard}${libCard}${dexCard}${entryCard}${signCard}</div></div>`;
+    }
+    // 中文注释：下载逆向分析报告（Markdown / JSON），由浏览器接管下载。
+    function downloadReport(format) {
+      if (!activeProjectTask) return;
+      window.open(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(activeProjectTask.id)}/report?format=${encodeURIComponent(format)}`);
+    }
     // 中文注释：根据文件扩展名返回对应图标和中文类型标签。
     function fileTypeInfo(name) { const lower = name.toLowerCase(); if (lower.endsWith('.xml')) return ['ti ti-file-code', 'XML']; if (lower.endsWith('.smali')) return ['ti ti-braces', 'Smali']; if (lower.endsWith('.json') || lower.endsWith('.yml') || lower.endsWith('.yaml')) return ['ti ti-file-description', '配置']; if (/\.(png|jpg|jpeg|webp|gif)$/.test(lower)) return ['ti ti-photo', '图片']; if (lower.endsWith('.apk') || lower.endsWith('.apks')) return ['ti ti-brand-android', 'APK']; if (lower.endsWith('.dex')) return ['ti ti-file-binary', 'DEX']; if (/\.(txt|md|log|properties)$/.test(lower)) return ['ti ti-file-text', '文本']; return ['ti ti-file', '文件']; }
     // 中文注释：进入指定项目目录，重新计算当前目录下的直接子项。

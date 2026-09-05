@@ -43,6 +43,10 @@ public final class ApktoolWebServer {
     private final Path workspace = Paths.get(System.getProperty("apktool.web.workspace", "web-work"))
         .toAbsolutePath().normalize();
     private final Path cliJar = resolveCliJar();
+    // 中文注释：DEX 编辑与实时预览引擎（内嵌 jadx），按任务懒加载。
+    private final DexPreviewService dexService = new DexPreviewService();
+    // 中文注释：逆向信息总览（应用画像）服务。
+    private final OverviewService overviewService = new OverviewService();
 
     public static void main(String[] args) throws Exception {
         new ApktoolWebServer().start();
@@ -130,6 +134,11 @@ public final class ApktoolWebServer {
             if (parts.length == 5 && "files".equals(parts[4])) { sendJson(exchange, 200, task.filesJson()); return; }
             if (parts.length == 5 && "content".equals(parts[4]) && "GET".equalsIgnoreCase(exchange.getRequestMethod())) { task.contentJson(exchange.getRequestURI(), exchange); return; }
             if (parts.length == 5 && "bundle".equals(parts[4])) { sendJson(exchange, 200, task.bundleJson()); return; }
+            // 中文注释：逆向信息总览接口与分析报告下载。
+            if (parts.length == 5 && "overview".equals(parts[4])) { overviewService.handle(task, exchange); return; }
+            if (parts.length == 5 && "report".equals(parts[4])) { overviewService.handleReport(task, exchange, query(exchange.getRequestURI(), "format")); return; }
+            // 中文注释：DEX 编辑与实时预览接口 /api/tasks/{id}/dex/{action}。
+            if (parts.length == 6 && "dex".equals(parts[4])) { dexService.handle(task, parts[5], exchange); return; }
             if (parts.length == 5 && "decode".equals(parts[4])) { startProcess(exchange, task, false); return; }
             if (parts.length == 5 && "build".equals(parts[4])) { startProcess(exchange, task, true); return; }
             sendJson(exchange, 200, task.json());
@@ -180,7 +189,7 @@ public final class ApktoolWebServer {
                 while ((value = in.read()) != -1) { if (value == '\n') { line = buffer.toString("UTF-8").trim(); if (!line.isEmpty()) task.log(line); buffer.reset(); } else if (value != '\r') buffer.write(value); }
                 if (buffer.size() > 0) task.log(buffer.toString("UTF-8").trim());
             }
-            int exit = process.waitFor(); task.status = exit == 0 ? "completed" : "failed"; task.log("进程结束，退出码 " + exit);
+            int exit = process.waitFor(); if (exit == 0 && !build) extractOriginalDex(task.input, decoded.resolve("original-dex")); task.status = exit == 0 ? "completed" : "failed"; task.log("进程结束，退出码 " + exit); if (exit == 0) dexService.invalidate(task);
         } catch (Exception error) { task.status = "failed"; task.log("错误：" + error.getMessage()); }
         finally { task.running = false; }
     }
@@ -188,6 +197,8 @@ public final class ApktoolWebServer {
     private static void copyLimited(InputStream in, Path target, long max) throws IOException {
         try (InputStream input = in; OutputStream out = Files.newOutputStream(target)) { byte[] data = new byte[8192]; long total = 0; int read; while ((read = input.read(data)) != -1) { total += read; if (total > max) throw new IOException("上传文件超过限制"); out.write(data, 0, read); } }
     }
+    // 中文注释：将 APK 中的原始 classes*.dex 提取到临时项目目录，供后续结构化预览使用。
+    static void extractOriginalDex(Path apk, Path target) throws IOException { Files.createDirectories(target); try (ZipFile zip = new ZipFile(apk.toFile())) { java.util.Enumeration<? extends ZipEntry> entries = zip.entries(); while (entries.hasMoreElements()) { ZipEntry entry = entries.nextElement(); String name = entry.getName(); if (!entry.isDirectory() && name.matches("classes\\d*\\.dex")) { try (InputStream in = zip.getInputStream(entry); OutputStream out = Files.newOutputStream(target.resolve(Paths.get(name).getFileName()))) { byte[] buf = new byte[8192]; int n; while ((n = in.read(buf)) != -1) out.write(buf, 0, n); } } } } }
     /** 中文注释：识别 classes4.dex 缺失但存在更高编号 DEX 的异常 APK。 */
     private static boolean hasAbnormalDexNaming(Path apk) {
         Set<Integer> numbers = new HashSet<>();
@@ -207,13 +218,13 @@ public final class ApktoolWebServer {
         return false;
     }
     private static boolean handleOptions(HttpExchange e) throws IOException { if (!"OPTIONS".equalsIgnoreCase(e.getRequestMethod())) return false; addCors(e.getResponseHeaders()); e.sendResponseHeaders(204, -1); e.close(); return true; }
-    private static String query(URI uri, String key) { for (String pair : uri.getRawQuery() == null ? new String[0] : uri.getRawQuery().split("&")) { String[] kv = pair.split("=", 2); if (kv.length == 2 && key.equals(kv[0])) try { return URLDecoder.decode(kv[1], "UTF-8"); } catch (Exception ignored) { return null; } } return null; }
-    private static void sendJson(HttpExchange e, int code, String body) throws IOException { byte[] bytes = body.getBytes(StandardCharsets.UTF_8); addCors(e.getResponseHeaders()); e.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8"); e.sendResponseHeaders(code, bytes.length); try (OutputStream out = e.getResponseBody()) { out.write(bytes); } }
+    static String query(URI uri, String key) { for (String pair : uri.getRawQuery() == null ? new String[0] : uri.getRawQuery().split("&")) { String[] kv = pair.split("=", 2); if (kv.length == 2 && key.equals(kv[0])) try { return URLDecoder.decode(kv[1], "UTF-8"); } catch (Exception ignored) { return null; } } return null; }
+    static void sendJson(HttpExchange e, int code, String body) throws IOException { byte[] bytes = body.getBytes(StandardCharsets.UTF_8); addCors(e.getResponseHeaders()); e.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8"); e.sendResponseHeaders(code, bytes.length); try (OutputStream out = e.getResponseBody()) { out.write(bytes); } }
     /** 中文注释：删除任务目录及其上传 APK、反编译文件和元数据。 */
-    private void deleteTask(Task task) throws IOException { tasks.remove(task.id); if (Files.exists(task.dir) && task.dir.startsWith(workspace)) { try (java.util.stream.Stream<Path> stream = Files.walk(task.dir)) { stream.sorted(Comparator.reverseOrder()).forEach(path -> { try { Files.deleteIfExists(path); } catch (IOException ignored) { } }); } } Files.deleteIfExists(workspace.resolve(task.id + ".apk")); }
-    private static void addCors(Headers headers) { headers.set("Access-Control-Allow-Origin", "*"); headers.set("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS"); headers.set("Access-Control-Allow-Headers", "Content-Type"); }
+    private void deleteTask(Task task) throws IOException { dexService.invalidate(task); tasks.remove(task.id); if (Files.exists(task.dir) && task.dir.startsWith(workspace)) { try (java.util.stream.Stream<Path> stream = Files.walk(task.dir)) { stream.sorted(Comparator.reverseOrder()).forEach(path -> { try { Files.deleteIfExists(path); } catch (IOException ignored) { } }); } } Files.deleteIfExists(workspace.resolve(task.id + ".apk")); }
+    static void addCors(Headers headers) { headers.set("Access-Control-Allow-Origin", "*"); headers.set("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS"); headers.set("Access-Control-Allow-Headers", "Content-Type"); }
     // 中文注释：统一转义 JSON 字符串，并兼容异常情况下的空值。
-    private static String escape(String value) { return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n"); }
+    static String escape(String value) { return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n"); }
     /** 中文注释：保存原始 APK 文件名，避免服务重启后退回显示 input.apk。 */
     private static void writeProjectMetadata(Path dir, String name) {
         try { Files.write(dir.resolve(".apktool-studio.json"), ("{\"name\":\"" + escape(name) + "\"}").getBytes(StandardCharsets.UTF_8)); } catch (IOException ignored) { }
@@ -242,7 +253,7 @@ public final class ApktoolWebServer {
     }
 
     /** 中文注释：内存中的任务状态，日志按顺序保存供前端轮询。 */
-    private static final class Task {
+    static final class Task {
         final String id, name; final Path dir, input; final List<String> logs = Collections.synchronizedList(new ArrayList<String>()); volatile String status = "uploaded"; volatile boolean running;
         Task(String id, String name, Path dir, Path input) { this.id=id; this.name=name; this.dir=dir; this.input=input; }
         /** 中文注释：将 Apktool CLI 的常见英文输出转换为中文，未知内容保持原样。 */
@@ -273,6 +284,6 @@ public final class ApktoolWebServer {
         /** 中文注释：优先列出自动解码目录；对于手动放入 web-work 的项目，直接列出项目根目录。 */
         String filesJson() throws IOException { Path decoded = dir.resolve("decoded"); Path root = Files.isDirectory(decoded) ? decoded : dir; StringBuilder out = new StringBuilder("{\"files\":["); boolean first = true; try (java.util.stream.Stream<Path> stream = Files.walk(root)) { java.util.Iterator<Path> iterator = stream.filter(Files::isRegularFile).filter(file -> !file.getFileName().toString().equals(".apktool-studio.json")).sorted().iterator(); while (iterator.hasNext()) { Path file = iterator.next(); if (!first) out.append(','); first = false; out.append('\"').append(escape(root.relativize(file).toString().replace('\\','/'))).append('\"'); } } return out.append("]}").toString(); }
         // 中文注释：读取项目内文本文件供前端预览，严格限制路径和大小，避免访问项目目录之外的文件。
-        void contentJson(URI uri, HttpExchange exchange) throws IOException { String raw = query(uri, "path"); if (raw == null || raw.trim().isEmpty()) { sendJson(exchange, 400, "{\"error\":\"缺少文件路径\"}"); return; } Path decoded = dir.resolve("decoded").normalize(); Path root = Files.isDirectory(decoded) ? decoded : dir; Path file = root.resolve(raw).normalize(); if (!file.startsWith(root) || !Files.isRegularFile(file)) { sendJson(exchange, 404, "{\"error\":\"文件不存在\"}"); return; } if (Files.size(file) > 20 * 1024 * 1024) { sendJson(exchange, 413, "{\"error\":\"文件过大，仅支持预览 20MB 以内文件\"}"); return; } String relative = root.relativize(file).toString().replace('\\','/'); String lower = file.getFileName().toString().toLowerCase(); String mime = lower.endsWith(".png") ? "image/png" : lower.endsWith(".jpg") || lower.endsWith(".jpeg") ? "image/jpeg" : lower.endsWith(".gif") ? "image/gif" : lower.endsWith(".webp") ? "image/webp" : ""; if (!mime.isEmpty()) { String base64 = java.util.Base64.getEncoder().encodeToString(Files.readAllBytes(file)); sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"mime\":\"" + mime + "\",\"data\":\"" + base64 + "\"}"); return; } if (lower.endsWith(".dex")) { String info = "DEX 二进制文件\\n\\n该文件不能直接作为普通文本编辑。\\n可在项目中查看对应的 Smali 反编译目录，或使用 DEX 专用工具进行分析。\\n\\n文件大小：" + Files.size(file) + " 字节"; sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"content\":\"" + escape(info) + "\"}"); return; } String text = new String(Files.readAllBytes(file), java.nio.charset.StandardCharsets.UTF_8); sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"content\":\"" + escape(text) + "\"}"); }
+        void contentJson(URI uri, HttpExchange exchange) throws IOException { String raw = query(uri, "path"); if (raw == null || raw.trim().isEmpty()) { sendJson(exchange, 400, "{\"error\":\"缺少文件路径\"}"); return; } Path decoded = dir.resolve("decoded").normalize(); Path root = Files.isDirectory(decoded) ? decoded : dir; Path file = root.resolve(raw).normalize(); if (!file.startsWith(root) || !Files.isRegularFile(file)) { sendJson(exchange, 404, "{\"error\":\"文件不存在\"}"); return; } if (Files.size(file) > 20 * 1024 * 1024) { sendJson(exchange, 413, "{\"error\":\"文件过大，仅支持预览 20MB 以内文件\"}"); return; } String relative = root.relativize(file).toString().replace('\\','/'); String lower = file.getFileName().toString().toLowerCase(); String mime = lower.endsWith(".png") ? "image/png" : lower.endsWith(".jpg") || lower.endsWith(".jpeg") ? "image/jpeg" : lower.endsWith(".gif") ? "image/gif" : lower.endsWith(".webp") ? "image/webp" : ""; if (!mime.isEmpty()) { String base64 = java.util.Base64.getEncoder().encodeToString(Files.readAllBytes(file)); sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"mime\":\"" + mime + "\",\"data\":\"" + base64 + "\"}"); return; } if (lower.endsWith(".dex")) { String info = "DEX 二进制文件\n\n该文件不能直接作为普通文本编辑。\n可在项目中查看对应的 Smali 反编译目录，或使用 DEX 专用工具进行分析。\n\n文件大小：" + Files.size(file) + " 字节"; sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"content\":\"" + escape(info) + "\"}"); return; } String text = new String(Files.readAllBytes(file), java.nio.charset.StandardCharsets.UTF_8); sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"content\":\"" + escape(text) + "\"}"); }
     }
 }

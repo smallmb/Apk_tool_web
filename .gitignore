@@ -12,6 +12,8 @@ apktool-web/web-work/
 *.apk
 *.apk.*
 logs/
+# 中文注释：内嵌 jadx 引擎 jar（含修改版 jadx-core）由本地 jadx-master 构建拷入，不入库。
+apktool-web/libs/
 
 # Eclipse
 **/nbproject/private/
