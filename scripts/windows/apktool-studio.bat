@@ -26,11 +26,24 @@ call :check_port 5173 "Web UI" || exit /b 1
 call :write_log "Starting Java API and Web UI"
 start "Apktool Studio Java API" /D "%PROJECT_DIR%" cmd /d /k call "%PROJECT_DIR%scripts\windows\apktool-studio.bat" api
 start "Apktool Studio Web UI" /D "%PROJECT_DIR%" cmd /d /k call "%PROJECT_DIR%scripts\windows\apktool-studio.bat" web
-timeout /t 2 /nobreak >nul
+call :wait_for_service 8787 "Java API" 45
+if errorlevel 1 echo [WARN] Java API 尚未就绪，请检查新打开的 Java API 窗口和 logs\launcher.log。
+call :wait_for_service 5173 "Web UI" 15
 echo Web UI:  http://127.0.0.1:5173/
 echo Java API: http://127.0.0.1:8787/api/health
 start "" "http://127.0.0.1:5173/"
 exit /b 0
+
+:wait_for_service
+set "WAIT_PORT=%~1"
+set "WAIT_NAME=%~2"
+set "WAIT_SECONDS=%~3"
+for /l %%N in (1,1,%WAIT_SECONDS%) do (
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$c=Get-NetTCPConnection -LocalPort %WAIT_PORT% -State Listen -ErrorAction SilentlyContinue; if ($c) { exit 0 } else { exit 1 }" >nul 2>nul
+  if not errorlevel 1 exit /b 0
+  timeout /t 1 /nobreak >nul
+)
+exit /b 1
 
 :start_api
 call :check_java || exit /b 1
@@ -60,6 +73,23 @@ exit /b %ERRORLEVEL%
 :check_java
 where java >nul 2>nul || (echo [ERROR] Java was not found in PATH.& exit /b 1)
 where javac >nul 2>nul || (echo [ERROR] A JDK with javac is required to build the Java API.& exit /b 1)
+rem 中文注释：DEX 工作台引擎要求 Java 11+，Gradle 编译运行使用的是 JAVA_HOME，这里校验其主版本。
+if not defined JAVA_HOME (
+  echo [ERROR] JAVA_HOME is not set. Set it to a JDK 11+ installation, e.g. set JAVA_HOME=C:\Program Files\Java\jdk-24
+  exit /b 1
+)
+if not exist "%JAVA_HOME%\bin\java.exe" (
+  echo [ERROR] JAVA_HOME is not a valid JDK: %JAVA_HOME%
+  exit /b 1
+)
+set "JAVA_MAJOR=0"
+for /f "usebackq delims=" %%V in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$o=(& \"$env:JAVA_HOME\bin\java.exe\" -version 2>&1 | Select-Object -First 1); $m=[regex]::Match($o,'\d+\.\d+'); if($m.Success){$p=$m.Value.Split('.');$maj=[int]$p[0];if($maj -eq 1){$maj=[int]$p[1]};Write-Output $maj}else{$m2=[regex]::Match($o,'\d+');if($m2.Success){Write-Output $m2.Value}else{Write-Output 0}}"`) do set "JAVA_MAJOR=%%V"
+if %JAVA_MAJOR% LSS 11 (
+  echo [ERROR] JAVA_HOME points to Java major version %JAVA_MAJOR%, but the DEX workbench requires Java 11+.
+  echo [ERROR] Update JAVA_HOME to a JDK 11+ installation, e.g. set JAVA_HOME=C:\Program Files\Java\jdk-24
+  exit /b 1
+)
+echo [OK] JAVA_HOME Java version: %JAVA_MAJOR%
 exit /b 0
 
 :check_python
