@@ -55,8 +55,9 @@ Suggestions: [#2283](https://github.com/iBotPeaches/Apktool/issues/2283), [#2218
 - [x] 项目文件左右双卡片预览布局与固定高度。
 - [x] 文本、图片和 DEX 文件类型识别。
 - [x] 20MB 以内文件预览与内部滚动。
-- [ ] 接入 smali/baksmali 与 dexlib2，实现 DEX 结构化查看和 Smali 编辑。
-- [ ] 使用 D8 重新生成 multidex，并在构建 APK 前执行校验。
+- [x] 接入内嵌 jadx 引擎（修改版 jadx-core + smali 3.0.9）：DEX 类列表、Java/Smali 预览、Smali 编辑 -> 内存汇编 -> 实时重反编译、补丁 DEX/APK 导出。
+- [ ] DEX 工作台持久化补丁会话（服务重启后恢复编辑状态）。
+- [ ] 导出 APK 自动调试签名（apksig），并引入 D8 重建 multidex 前置校验。
 
 ## Version relevant framework files
 Applications are built against a specific framework version. Apktool ships with the latest framework file at that
