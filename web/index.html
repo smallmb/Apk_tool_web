@@ -38,11 +38,13 @@
     .nav button.active, .nav button:hover { color:var(--text-primary); background:rgba(var(--accent-primary-rgb),.11); transform:translateX(3px); }
     .nav i { width:18px; color:var(--accent-primary); font-size:18px; line-height:1; }
     .sidebar-footer { position:absolute; bottom:32px; color:var(--text-tertiary); font-size:11px; line-height:1.6; }
-    .main { min-width:0; min-height:0; padding:30px 22px 42px; overflow:hidden; }
+    .main { min-width:0; min-height:0; padding:14px 18px 10px; overflow:hidden; display:flex; flex-direction:column; gap:10px; }
     #page-panel { max-height:calc(100vh - 110px); overflow:hidden; }
-    .topbar { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; margin-bottom:30px; }
+    .topbar { display:flex; justify-content:space-between; gap:14px; align-items:baseline; margin-bottom:2px; }
+    .topbar h1 { font-size:20px; margin:0; letter-spacing:-.02em; }
+    .topbar .lede { font-size:12px; margin:0; }
     .topbar > div:first-child { max-width:700px; }
-    h1 { font-size:clamp(28px,3vw,44px); line-height:1; letter-spacing:-.065em; margin:9px 0 12px; }
+    h1 { font-size:20px; line-height:1.15; letter-spacing:-.02em; margin:0; }
     .lede { color:var(--text-secondary); max-width:570px; margin:0; line-height:1.65; }
     .status { display:flex; gap:9px; align-items:center; color:var(--text-secondary); border:1px solid var(--border-subtle); border-radius:999px; padding:8px 12px; font-size:12px; white-space:nowrap; }
     .dot { width:7px; height:7px; border-radius:50%; background:var(--accent-primary); box-shadow:0 0 12px var(--accent-primary); }
@@ -181,22 +183,22 @@
     .view-pills { display:inline-flex; border:1px solid var(--border-default); border-radius:10px; overflow:hidden; }
     .view-pills button { padding:7px 16px; border:0; border-radius:0; background:transparent; color:var(--text-tertiary); font-size:12px; }
     .view-pills button.active { color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.12); }
-    .ov-wrap { display:flex; flex-direction:column; gap:14px; padding:14px; min-height:0; overflow:auto; scrollbar-width:none; }
+    .ov-wrap { display:flex; flex-direction:column; gap:10px; padding:10px 12px; min-height:0; overflow:auto; scrollbar-width:none; flex:1; }
     .ov-wrap::-webkit-scrollbar { width:0; height:0; display:none; }
-    .ov-hero { display:flex; align-items:center; gap:18px; padding:18px 20px; border:1px solid var(--border-default); border-radius:14px; background:rgba(8,28,25,.68); flex-wrap:wrap; }
-    .ov-avatar { width:58px; height:58px; border-radius:16px; display:grid; place-items:center; font-size:26px; font-weight:700; color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.14); border:1px solid var(--border-subtle); }
-    .ov-hero h3 { margin:0 0 4px; color:var(--text-primary); font-size:19px; }
+    .ov-hero { display:flex; align-items:center; gap:14px; padding:12px 16px; border:1px solid var(--border-default); border-radius:12px; background:rgba(8,28,25,.68); flex-wrap:wrap; }
+    .ov-avatar { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; font-size:20px; font-weight:700; color:var(--accent-primary); background:rgba(var(--accent-primary-rgb),.14); border:1px solid var(--border-subtle); }
+    .ov-hero h3 { margin:0 0 2px; color:var(--text-primary); font-size:16px; }
     .ov-pkg { color:var(--text-tertiary); font-size:12px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
     .ov-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
     .ov-badge { padding:3px 10px; border-radius:999px; font-size:11px; border:1px solid var(--border-subtle); color:var(--text-secondary); background:rgba(255,255,255,.03); }
     .ov-badge.good { color:#7bd88f; border-color:rgba(123,216,143,.35); }
     .ov-badge.warn { color:#e0a53d; border-color:rgba(224,165,61,.35); }
     .ov-badge.bad { color:#e0533d; border-color:rgba(224,83,61,.35); }
-    .ov-quickstats { margin-left:auto; display:flex; gap:22px; text-align:right; flex-wrap:wrap; }
-    .ov-quickstats .qs b { display:block; color:var(--text-primary); font-size:20px; }
+    .ov-quickstats { margin-left:auto; display:flex; gap:18px; text-align:right; flex-wrap:wrap; }
+    .ov-quickstats .qs b { display:block; color:var(--text-primary); font-size:16px; }
     .ov-quickstats .qs span { color:var(--text-tertiary); font-size:11px; }
-    .ov-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
-    .ov-card { border:1px solid var(--border-default); border-radius:14px; background:rgba(8,28,25,.68); padding:14px 16px; min-width:0; }
+    .ov-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:10px; }
+    .ov-card { border:1px solid var(--border-default); border-radius:12px; background:rgba(8,28,25,.68); padding:10px 12px; min-width:0; }
     .ov-card-title { display:flex; align-items:center; justify-content:space-between; margin:0 0 10px; color:var(--text-primary); font-size:13px; font-weight:600; }
     .ov-card-title small { color:var(--text-tertiary); font-weight:400; }
     .ov-copy { padding:4px 10px; font-size:11px; }
@@ -229,7 +231,8 @@
     .str-val { min-width:0; word-break:break-all; color:var(--text-secondary); font:11.5px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace; }
     .dex-editor-toolbar label { display:flex; align-items:center; gap:5px; }
     .file-preview-meta { padding:18px; border-left:1px solid var(--border-subtle); color:var(--text-tertiary); font-size:12px; }
-    .file-content-split { display:grid; grid-template-columns:minmax(220px,1fr) minmax(0,3fr); gap:18px; align-items:stretch; height:730px; }
+    .file-content-split { display:grid; grid-template-columns:minmax(220px,1fr) minmax(0,3fr); gap:14px; align-items:stretch; flex:1; min-height:0; }
+    #file-browser { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
     .file-list-pane, .file-preview-pane { min-width:0; border:1px solid var(--border-default); border-radius:14px; background:rgba(8,28,25,.68); overflow:hidden; }
     .file-list-pane { padding:14px; overflow:auto; }
     .file-list-pane .file-search { margin:0 0 8px; width:100%; }
@@ -293,7 +296,7 @@
     .file-search { width:100%; margin:0 0 12px; padding:9px 11px; border:1px solid var(--border-default); border-radius:9px; color:var(--text-primary); background:rgba(255,255,255,.045); outline:0; }
     .file-search:focus { border-color:var(--accent-primary); }
     .project-tabs { display:flex; gap:4px; overflow-x:auto; margin:0 0 14px; padding:4px; border-bottom:1px solid var(--border-subtle); }
-    .page-tabs { display:flex; gap:4px; overflow-x:auto; margin:0 0 18px; padding:4px; border-bottom:1px solid var(--border-subtle); }
+    .page-tabs { display:flex; gap:4px; overflow-x:auto; margin:0 0 8px; padding:4px; border-bottom:1px solid var(--border-subtle); }
     .page-tab { flex:0 0 auto; padding:8px 14px; border:1px solid transparent; border-radius:8px 8px 0 0; color:var(--text-tertiary); background:transparent; cursor:pointer; }
     .page-tab:hover, .page-tab.active { color:var(--text-primary); background:rgba(var(--accent-primary-rgb),.1); }
     .page-tab.active { border-color:var(--border-default); border-bottom-color:var(--accent-primary); }
@@ -1035,7 +1038,7 @@
     // 中文注释：按文件名即时过滤当前目录内容，不重新请求后端数据。
     function filterProjectFiles(keyword) { const value = String(keyword || '').trim().toLowerCase(); document.querySelectorAll('#file-browser .file-folder, #file-browser .file-row').forEach((row) => { row.style.display = !value || row.textContent.toLowerCase().includes(value) ? '' : 'none'; }); }
     // 中文注释：按文件名即时过滤当前目录内容，不重新请求后端数据。
-    function filterProjectFiles(keyword) { const value = String(keyword || '').trim().toLowerCase(); document.querySelectorAll('#file-browser .file-folder, #file-browser .file-row').forEach((row) => { row.style.display = !value || row.textContent.toLowerCase().includes(value) ? '' : 'none'; }); }
+
     // 中文注释：项目页 总览/文件 视图切换；总览聚合应用画像供逆向取信息。
     let projectView = 'files';
     let ovData = null;
