@@ -47,6 +47,8 @@ public final class ApktoolWebServer {
     private final DexPreviewService dexService = new DexPreviewService();
     // 中文注释：逆向信息总览（应用画像）服务。
     private final OverviewService overviewService = new OverviewService();
+    // 中文注释：adb 设备集成（安装签名 APK 的最小闭环）。
+    private final AdbService adbService = new AdbService();
 
     public static void main(String[] args) throws Exception {
         new ApktoolWebServer().start();
@@ -137,6 +139,11 @@ public final class ApktoolWebServer {
             // 中文注释：逆向信息总览接口与分析报告下载。
             if (parts.length == 5 && "overview".equals(parts[4])) { overviewService.handle(task, exchange); return; }
             if (parts.length == 5 && "report".equals(parts[4])) { overviewService.handleReport(task, exchange, query(exchange.getRequestURI(), "format")); return; }
+            // 中文注释：资源浏览接口。
+            if (parts.length == 5 && "res".equals(parts[4])) { overviewService.handleRes(task, exchange); return; }
+            // 中文注释：adb 设备接口（设备列表 / 安装修补后的签名 APK）。
+            if (parts.length == 5 && "adb".equals(parts[4])) { adbService.handleDevices(exchange); return; }
+            if (parts.length == 6 && "adb".equals(parts[4]) && "install".equals(parts[5])) { adbService.handleInstall(task, exchange); return; }
             // 中文注释：DEX 编辑与实时预览接口 /api/tasks/{id}/dex/{action}。
             if (parts.length == 6 && "dex".equals(parts[4])) { dexService.handle(task, parts[5], exchange); return; }
             if (parts.length == 5 && "decode".equals(parts[4])) { startProcess(exchange, task, false); return; }
@@ -284,6 +291,26 @@ public final class ApktoolWebServer {
         /** 中文注释：优先列出自动解码目录；对于手动放入 web-work 的项目，直接列出项目根目录。 */
         String filesJson() throws IOException { Path decoded = dir.resolve("decoded"); Path root = Files.isDirectory(decoded) ? decoded : dir; StringBuilder out = new StringBuilder("{\"files\":["); boolean first = true; try (java.util.stream.Stream<Path> stream = Files.walk(root)) { java.util.Iterator<Path> iterator = stream.filter(Files::isRegularFile).filter(file -> !file.getFileName().toString().equals(".apktool-studio.json")).sorted().iterator(); while (iterator.hasNext()) { Path file = iterator.next(); if (!first) out.append(','); first = false; out.append('\"').append(escape(root.relativize(file).toString().replace('\\','/'))).append('\"'); } } return out.append("]}").toString(); }
         // 中文注释：读取项目内文本文件供前端预览，严格限制路径和大小，避免访问项目目录之外的文件。
-        void contentJson(URI uri, HttpExchange exchange) throws IOException { String raw = query(uri, "path"); if (raw == null || raw.trim().isEmpty()) { sendJson(exchange, 400, "{\"error\":\"缺少文件路径\"}"); return; } Path decoded = dir.resolve("decoded").normalize(); Path root = Files.isDirectory(decoded) ? decoded : dir; Path file = root.resolve(raw).normalize(); if (!file.startsWith(root) || !Files.isRegularFile(file)) { sendJson(exchange, 404, "{\"error\":\"文件不存在\"}"); return; } if (Files.size(file) > 20 * 1024 * 1024) { sendJson(exchange, 413, "{\"error\":\"文件过大，仅支持预览 20MB 以内文件\"}"); return; } String relative = root.relativize(file).toString().replace('\\','/'); String lower = file.getFileName().toString().toLowerCase(); String mime = lower.endsWith(".png") ? "image/png" : lower.endsWith(".jpg") || lower.endsWith(".jpeg") ? "image/jpeg" : lower.endsWith(".gif") ? "image/gif" : lower.endsWith(".webp") ? "image/webp" : ""; if (!mime.isEmpty()) { String base64 = java.util.Base64.getEncoder().encodeToString(Files.readAllBytes(file)); sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"mime\":\"" + mime + "\",\"data\":\"" + base64 + "\"}"); return; } if (lower.endsWith(".dex")) { String info = "DEX 二进制文件\n\n该文件不能直接作为普通文本编辑。\n可在项目中查看对应的 Smali 反编译目录，或使用 DEX 专用工具进行分析。\n\n文件大小：" + Files.size(file) + " 字节"; sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"content\":\"" + escape(info) + "\"}"); return; } String text = new String(Files.readAllBytes(file), java.nio.charset.StandardCharsets.UTF_8); sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"content\":\"" + escape(text) + "\"}"); }
+        // 中文注释：读取项目内文件供前端预览，严格限制路径和大小；附带大小/修改时间/MD5/行数等元数据。
+        void contentJson(URI uri, HttpExchange exchange) throws IOException {
+            String raw = query(uri, "path");
+            if (raw == null || raw.trim().isEmpty()) { sendJson(exchange, 400, "{\"error\":\"缺少文件路径\"}"); return; }
+            Path decoded = dir.resolve("decoded").normalize(); Path root = Files.isDirectory(decoded) ? decoded : dir; Path file = root.resolve(raw).normalize();
+            if (!file.startsWith(root) || !Files.isRegularFile(file)) { sendJson(exchange, 404, "{\"error\":\"文件不存在\"}"); return; }
+            if (Files.size(file) > 20 * 1024 * 1024) { sendJson(exchange, 413, "{\"error\":\"文件过大，仅支持预览 20MB 以内文件\"}"); return; }
+            byte[] rawBytes = Files.readAllBytes(file);
+            String md5 = md5Hex(rawBytes);
+            String mtime = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(java.time.ZoneId.systemDefault()).format(Files.getLastModifiedTime(file).toInstant());
+            String attrs = ",\"size\":" + rawBytes.length + ",\"mtime\":\"" + escape(mtime) + "\",\"md5\":\"" + md5 + "\"";
+            String relative = root.relativize(file).toString().replace('\\', '/');
+            String lower = file.getFileName().toString().toLowerCase();
+            String mime = lower.endsWith(".png") ? "image/png" : lower.endsWith(".jpg") || lower.endsWith(".jpeg") ? "image/jpeg" : lower.endsWith(".gif") ? "image/gif" : lower.endsWith(".webp") ? "image/webp" : "";
+            if (!mime.isEmpty()) { String base64 = java.util.Base64.getEncoder().encodeToString(rawBytes); sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"mime\":\"" + mime + "\",\"data\":\"" + base64 + "\"" + attrs + "}"); return; }
+            if (lower.endsWith(".dex")) { String info = "DEX 二进制文件\n\n该文件不能直接作为普通文本编辑。\n点击顶部“字符串”模式可查看本 dex 的字符串池。\n\n文件大小：" + rawBytes.length + " 字节"; sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"content\":\"" + escape(info) + "\"" + attrs + "}"); return; }
+            String text = new String(rawBytes, java.nio.charset.StandardCharsets.UTF_8);
+            int lineCount = text.isEmpty() ? 0 : text.split("\n").length;
+            sendJson(exchange, 200, "{\"path\":\"" + escape(relative) + "\",\"content\":\"" + escape(text) + "\",\"lines\":" + lineCount + attrs + "}");
+        }
+        static String md5Hex(byte[] data) { try { java.security.MessageDigest digest = java.security.MessageDigest.getInstance("MD5"); StringBuilder sb = new StringBuilder(); for (byte b : digest.digest(data)) sb.append(String.format("%02x", b)); return sb.toString(); } catch (Exception e) { return ""; } }
     }
 }

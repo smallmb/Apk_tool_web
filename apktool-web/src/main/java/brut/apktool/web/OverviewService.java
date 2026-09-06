@@ -52,6 +52,7 @@ final class OverviewService {
 	private static final Pattern SCHEME = Pattern.compile("android:scheme=\"([^\"]+)\"");
 	private static final Pattern APP_LABEL = Pattern.compile("android:label=\"([^\"]*)\"");
 	private static final Pattern STRING_RES = Pattern.compile("<string name=\"([^\"]+)\">([^<]*)</string>");
+	private static final Pattern COLOR_RES = Pattern.compile("<color name=\"([^\"]+)\">([^<]*)</color>");
 	private static final Gson GSON = new Gson();
 
 	static {
@@ -478,28 +479,174 @@ final class OverviewService {
 		return result;
 	}
 
-	/** 中文注释：原始 APK 的体积与 v1 签名痕迹（META-INF 下的证书与清单）。 */
+	/** 中文注释：原始 APK 的体积、v1/v2/v3 签名方案与证书详情（解析 META-INF 证书）。 */
 	private Map<String, Object> parseSign(ApktoolWebServer.Task task) throws IOException {
 		Map<String, Object> sign = new LinkedHashMap<>();
 		long apkSize = 0;
+		List<String> schemes = new ArrayList<>();
+		List<String> signFiles = new ArrayList<>();
+		List<Map<String, Object>> certs = new ArrayList<>();
 		if (Files.isRegularFile(task.input)) {
 			apkSize = Files.size(task.input);
-			List<String> signFiles = new ArrayList<>();
 			try (ZipFile zip = new ZipFile(task.input.toFile())) {
 				Enumeration<? extends ZipEntry> entries = zip.entries();
 				while (entries.hasMoreElements()) {
 					ZipEntry entry = entries.nextElement();
-					String name = entry.getName().toUpperCase(Locale.ROOT);
-					if (name.startsWith("META-INF/") && (name.endsWith(".RSA") || name.endsWith(".DSA") || name.endsWith(".EC") || name.endsWith(".SF") || name.endsWith(".MANIFEST"))) {
+					String upper = entry.getName().toUpperCase(Locale.ROOT);
+					if (upper.startsWith("META-INF/") && (upper.endsWith(".RSA") || upper.endsWith(".DSA") || upper.endsWith(".EC"))) {
 						signFiles.add(entry.getName());
+						try (InputStream in = zip.getInputStream(entry)) {
+							java.security.cert.CertificateFactory factory = java.security.cert.CertificateFactory.getInstance("X.509");
+							for (java.security.cert.Certificate certificate : factory.generateCertificates(in)) {
+								if (certificate instanceof java.security.cert.X509Certificate && certs.size() < 4) {
+									java.security.cert.X509Certificate x509 = (java.security.cert.X509Certificate) certificate;
+									Map<String, Object> cert = new LinkedHashMap<>();
+									cert.put("subject", x509.getSubjectX500Principal().getName());
+									cert.put("issuer", x509.getIssuerX500Principal().getName());
+									cert.put("notBefore", x509.getNotBefore().toString());
+									cert.put("notAfter", x509.getNotAfter().toString());
+									cert.put("sigAlg", x509.getSigAlgName());
+									certs.add(cert);
+								}
+							}
+						} catch (Exception ignored) {
+						}
+					}
+				}
+			} catch (Exception ignored) {
+			}
+			if (!signFiles.isEmpty()) {
+				schemes.add("V1");
+			}
+			schemes.addAll(detectBlockSchemes(task.input));
+		}
+		sign.put("apkSize", apkSize);
+		sign.put("v1", !signFiles.isEmpty());
+		sign.put("signFiles", signFiles);
+		sign.put("schemes", schemes);
+		sign.put("certs", certs);
+		return sign;
+	}
+
+	/**
+	 * 中文注释：解析 APK Signing Block 检测 v2/v3 签名方案。
+	 * EOCD 定位中央目录偏移，其前为 [pair区大小][magic "APK Sig Block 42"]，
+	 * 遍历 ID-Value：0x7109871a=V2，0xf05368c0=V3，0x1b93ad61=V3.1。
+	 */
+	private static List<String> detectBlockSchemes(Path apk) {
+		List<String> schemes = new ArrayList<>();
+		try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(apk.toFile(), "r")) {
+			long length = raf.length();
+			int tailLen = (int) Math.min(length, 22L + 65535L);
+			byte[] tail = new byte[tailLen];
+			raf.seek(length - tailLen);
+			raf.readFully(tail);
+			int eocd = -1;
+			for (int i = tail.length - 22; i >= 0; i--) {
+				if (tail[i] == 0x50 && tail[i + 1] == 0x4B && tail[i + 2] == 0x05 && tail[i + 3] == 0x06) {
+					eocd = i;
+					break;
+				}
+			}
+			if (eocd < 0 || eocd + 20 > tail.length) {
+				return schemes;
+			}
+			long cdOffset = (tail[eocd + 16] & 0xFFL) | ((tail[eocd + 17] & 0xFFL) << 8) | ((tail[eocd + 18] & 0xFFL) << 16) | ((tail[eocd + 19] & 0xFFL) << 24);
+			if (cdOffset < 32 || cdOffset > length) {
+				return schemes;
+			}
+			byte[] magic = new byte[16];
+			raf.seek(cdOffset - 16);
+			raf.readFully(magic);
+			if (!"APK Sig Block 42".equals(new String(magic, StandardCharsets.US_ASCII))) {
+				return schemes;
+			}
+			byte[] sizeBytes = new byte[8];
+			raf.seek(cdOffset - 24);
+			raf.readFully(sizeBytes);
+			long pairsLen = 0;
+			for (int i = 7; i >= 0; i--) {
+				pairsLen = (pairsLen << 8) | (sizeBytes[i] & 0xFFL);
+			}
+			long pos = cdOffset - 24 - pairsLen;
+			long end = cdOffset - 24;
+			while (pos + 12 <= end) {
+				raf.seek(pos);
+				byte[] head = new byte[12];
+				raf.readFully(head);
+				long pairLen = 0;
+				for (int i = 7; i >= 0; i--) {
+					pairLen = (pairLen << 8) | (head[i] & 0xFFL);
+				}
+				int id = (head[8] & 0xFF) | ((head[9] & 0xFF) << 8) | ((head[10] & 0xFF) << 16) | ((head[11] & 0xFF) << 24);
+				if (id == 0x7109871A && !schemes.contains("V2")) {
+					schemes.add("V2");
+				} else if (id == 0xF05368C0 && !schemes.contains("V3")) {
+					schemes.add("V3");
+				} else if (id == 0x1B93AD61 && !schemes.contains("V3.1")) {
+					schemes.add("V3.1");
+				}
+				pos += 8 + pairLen;
+			}
+		} catch (Exception ignored) {
+		}
+		return schemes;
+	}
+
+	/**
+	 * 中文注释：资源接口——values 结构化（字符串/颜色）+ res 目录统计，供"资源"页签浏览。
+	 */
+	void handleRes(ApktoolWebServer.Task task, HttpExchange exchange) throws IOException {
+		Path decoded = decodedDir(task);
+		Map<String, Object> out = new LinkedHashMap<>();
+		List<Map<String, String>> strings = new ArrayList<>();
+		List<Map<String, String>> colors = new ArrayList<>();
+		Path valuesDir = decoded.resolve("res/values");
+		if (Files.isDirectory(valuesDir)) {
+			try (Stream<Path> stream = Files.list(valuesDir)) {
+				for (Path file : (Iterable<Path>) stream.filter(f -> f.getFileName().toString().endsWith(".xml"))::iterator) {
+					String text = Files.readString(file, StandardCharsets.UTF_8);
+					Matcher sm = STRING_RES.matcher(text);
+					while (sm.find()) {
+						Map<String, String> item = new LinkedHashMap<>();
+						item.put("n", sm.group(1));
+						item.put("v", sm.group(2));
+						strings.add(item);
+					}
+					Matcher cm = COLOR_RES.matcher(text);
+					while (cm.find()) {
+						Map<String, String> item = new LinkedHashMap<>();
+						item.put("n", cm.group(1));
+						item.put("v", cm.group(2));
+						colors.add(item);
 					}
 				}
 			}
-			sign.put("v1", !signFiles.isEmpty());
-			sign.put("signFiles", signFiles);
 		}
-		sign.put("apkSize", apkSize);
-		return sign;
+		Map<String, Integer> counts = new LinkedHashMap<>();
+		Path resDir = decoded.resolve("res");
+		int totalFiles = 0;
+		if (Files.isDirectory(resDir)) {
+			try (Stream<Path> stream = Files.walk(resDir)) {
+				for (Path file : (Iterable<Path>) stream.filter(Files::isRegularFile)::iterator) {
+					totalFiles++;
+					String parent = file.getParent() == null ? "" : file.getParent().getFileName().toString().toLowerCase(Locale.ROOT);
+					String bucket = parent.startsWith("values") ? "values"
+							: parent.startsWith("drawable") ? "drawable"
+							: parent.startsWith("mipmap") ? "mipmap"
+							: parent.startsWith("layout") ? "layout"
+							: parent.startsWith("anim") ? "anim"
+							: parent.startsWith("raw") ? "raw"
+							: "其他";
+					counts.merge(bucket, 1, Integer::sum);
+				}
+			}
+		}
+		out.put("strings", strings);
+		out.put("colors", colors);
+		out.put("counts", counts);
+		out.put("totalFiles", totalFiles);
+		ApktoolWebServer.sendJson(exchange, 200, GSON.toJson(out));
 	}
 
 	/** 中文注释：入口 Activity = 带 MAIN + LAUNCHER 过滤器的 activity。 */
