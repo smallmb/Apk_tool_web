@@ -422,6 +422,13 @@
     // 中文注释：从浏览器本地存储恢复已导入的项目分组，刷新页面后仍保留会话入口。
     const importedProjectGroups = JSON.parse(localStorage.getItem('apktool-project-groups') || '[]');
     const projectSessionMeta = JSON.parse(localStorage.getItem('apktool-project-session-meta') || '{}');
+    // 中文注释：本地解码项目始终存在磁盘中，"关闭"不应永久隐藏；启动时清除历史遗留的 closed 标记。
+    Object.keys(projectSessionMeta).forEach((taskId) => {
+      if (projectSessionMeta[taskId] && projectSessionMeta[taskId].closed) {
+        delete projectSessionMeta[taskId].closed;
+      }
+    });
+    localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta));
     const tabOrder = JSON.parse(localStorage.getItem('apktool-tab-order') || '{}');
     let pendingApksEntries = [];
     // 中文注释：读取 APKS ZIP 中央目录，获取真实分包名称和文件大小。
@@ -610,7 +617,7 @@
     function renderSidebarProjects() {
       const host = document.getElementById('sidebar-projects'); if (!host) return;
       const visibleTasks = activeProjectTasks.filter((task) => !projectSessionMeta[task.id]?.closed).sort((a, b) => (projectSessionMeta[b.id]?.lastAccess || 0) - (projectSessionMeta[a.id]?.lastAccess || 0));
-      const sessions = visibleTasks.map((task) => { const label = projectSessionMeta[task.id]?.name || task.name || '未命名项目'; return `<div class="project-session${activeProjectTask && activeProjectTask.id === task.id ? ' active' : ''}" data-task-id="${escapeHtml(task.id)}"><button class="project-session-main" title="${escapeHtml(label)}" onclick="openSidebarTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><span class="project-session-title">${escapeHtml(label)}</span><span class="project-session-meta">${escapeHtml(formatTaskAge(task))}</span></button><span class="project-session-actions"><button title="重命名" onclick="renameProjectTask(event, decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-pencil"></i></button><button title="关闭" onclick="closeProjectTask(event, decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-x"></i></button><button title="删除会话记录" onclick="deleteProjectTask(event, decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-trash"></i></button></span></div>`; }).join('');
+      const sessions = visibleTasks.map((task) => { const label = projectSessionMeta[task.id]?.name || task.name || '未命名项目'; return `<div class="project-session${activeProjectTask && activeProjectTask.id === task.id ? ' active' : ''}" data-task-id="${escapeHtml(task.id)}"><button class="project-session-main" title="${escapeHtml(label)}" onclick="openSidebarTask(decodeURIComponent('${encodeURIComponent(task.id)}'))"><span class="project-session-title">${escapeHtml(label)}</span><span class="project-session-meta">${escapeHtml(formatTaskAge(task))}</span></button><span class="project-session-actions"><button title="重命名" onclick="renameProjectTask(event, decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-pencil"></i></button><button title="删除会话记录" onclick="deleteProjectTask(event, decodeURIComponent('${encodeURIComponent(task.id)}'))"><i class="ti ti-trash"></i></button></span></div>`; }).join('');
       const imported = importedProjectGroups.map((group) => `<section class="project-group"><div class="project-group-head"><i class="ti ti-folder"></i><strong>${escapeHtml(group.name)}</strong></div><div class="project-sessions"><div class="project-session"><span class="project-session-title">${group.count} 个本地文件</span><span class="project-session-meta">刚刚</span></div></div></section>`).join('');
       host.innerHTML = `<div class="project-import"><span class="project-import-label"><i class="ti ti-folder-code"></i><span>项目文件</span></span><button title="从本地导入文件夹" onclick="document.getElementById('project-folder-input').click()"><i class="ti ti-plus"></i></button></div><section class="project-group"><div class="project-group-head"><i class="ti ti-folder"></i><strong>web-work</strong></div><div class="project-sessions">${sessions || '<p class="project-empty">暂无项目</p>'}</div></section>${imported}`;
     }
@@ -619,7 +626,13 @@
     // 中文注释：重命名只修改界面会话名称，不改变后端任务目录。
     function renameProjectTask(event, taskId) { event.stopPropagation(); const row = document.querySelector(`.project-session[data-task-id="${CSS.escape(taskId)}"]`); if (!row || row.querySelector('.project-session-edit')) return; row.classList.add('editing'); const title = row.querySelector('.project-session-title'); const current = title?.textContent || ''; const input = document.createElement('input'); input.className = 'project-session-edit'; input.value = current; input.setAttribute('aria-label', '会话名称'); title.replaceWith(input); ['click','pointerdown','mousedown'].forEach((type) => input.addEventListener(type, (e) => e.stopPropagation())); input.focus(); input.setSelectionRange(input.value.length, input.value.length); const save = () => { const next = input.value.trim(); if (next) projectSessionMeta[taskId] = { ...(projectSessionMeta[taskId] || {}), name: next }; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); renderSidebarProjects(); }; input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderSidebarProjects(); }); input.addEventListener('blur', save); }
     // 中文注释：关闭会话只从侧边栏隐藏，后端文件仍然保留，可通过刷新任务列表恢复。
-    function closeProjectTask(event, taskId) { event.stopPropagation(); projectSessionMeta[taskId] = { ...(projectSessionMeta[taskId] || {}), closed: true }; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); renderSidebarProjects(); }
+    function closeProjectTask(event, taskId) {
+      // 中文注释：项目文件始终保留在磁盘与侧栏，这里仅移除顶部标签视图。
+      event.stopPropagation();
+      openProjectTabIds = openProjectTabIds.filter((id) => id !== taskId);
+      if (activeProjectTask?.id === taskId) { activeProjectTask = null; activeProjectFiles = []; activeProjectPath = ''; renderTaskRoot(); }
+      renderProjectTabs();
+    }
     // 中文注释：删除本地会话记录，不删除 web-work 中的实际项目文件。
     async function deleteProjectTask(event, taskId) { event.stopPropagation(); const task = activeProjectTasks.find((item) => item.id === taskId); const label = projectSessionMeta[taskId]?.name || task?.name || taskId; if (!await showDeleteDialog(label)) return; try { const response = await fetch(`http://127.0.0.1:8787/api/tasks/${encodeURIComponent(taskId)}`, { method:'DELETE' }); if (!response.ok) throw new Error('删除失败'); delete projectSessionMeta[taskId]; localStorage.setItem('apktool-project-session-meta', JSON.stringify(projectSessionMeta)); activeProjectTasks = activeProjectTasks.filter((item) => item.id !== taskId); openProjectTabIds = openProjectTabIds.filter((id) => id !== taskId); if (activeProjectTask?.id === taskId) { activeProjectTask = null; activeProjectFiles = []; activeProjectPath = ''; } renderSidebarProjects(); if (document.getElementById('file-browser')) renderTaskRoot(); showToast(`已删除：${label}`); } catch (error) { showToast(error.message, true); } }
     // 中文注释：显示删除确认弹窗，确认后才会向后端发送彻底删除请求。
